@@ -1,0 +1,123 @@
+import type { Festival } from "../types";
+
+export const festivals: Festival[] = [
+  {
+    id: "winobranie-2026",
+    name: {
+      pl: "Winobranie 2026 – Święto Wina w Zielonej Górze",
+      en: "Winobranie 2026 – Wine Harvest Festival in Zielona Góra",
+    },
+    description: {
+      pl: "Coroczne święto winobrania w Zielonej Górze – największa impreza winiarska w Polsce. Kilka dni pełnych degustacji, koncertów, korowodu i zabawy. Tradycja sięgająca średniowiecza, kontynuowana od powojennych lat.",
+      en: "Annual wine harvest festival in Zielona Góra – the largest wine event in Poland. Days filled with tastings, concerts, parade, and entertainment. A tradition dating back to the Middle Ages, continued since the postwar years.",
+    },
+    startDate: "2026-09-05",
+    endDate: "2026-09-13",
+    location: {
+      pl: "Centrum Zielonej Góry i okolice",
+      en: "Zielona Góra city center and surroundings",
+    },
+    coordinates: { lat: 51.9356, lng: 15.5062 },
+    imageUrl: "/images/festival/winobranie-hero.jpg",
+    events: [
+      {
+        id: "otwarcie",
+        name: { pl: "Uroczyste otwarcie Winobrania", en: "Grand Opening Ceremony" },
+        description: {
+          pl: "Oficjalne rozpoczęcie Winobrania z udziałem władz miasta, degustacją win i występami artystycznymi.",
+          en: "Official start of Winobranie with city officials, wine tasting, and artistic performances.",
+        },
+        date: "2026-09-05",
+        startTime: "17:00",
+        endTime: "20:00",
+        category: "other",
+        location: { pl: "Plac Bohaterów", en: "Bohaterów Square" },
+        coordinates: { lat: 51.9358, lng: 15.5076 },
+      },
+      {
+        id: "korowod",
+        name: { pl: "Korowód Winobraniowy", en: "Wine Harvest Parade" },
+        description: {
+          pl: "Barwny korowód ulicami miasta z platformami, zespołami i tancerzami. Kulminacyjny punkt festiwalu.",
+          en: "Colorful parade through city streets with floats, bands, and dancers. The festival's highlight.",
+        },
+        date: "2026-09-06",
+        startTime: "12:00",
+        endTime: "15:00",
+        category: "parade",
+        location: { pl: "Trasa: al. Niepodległości – Deptak", en: "Route: al. Niepodległości – Promenade" },
+        coordinates: { lat: 51.9365, lng: 15.5075 },
+      },
+      {
+        id: "degustacja-rynek",
+        name: { pl: "Wielka Degustacja Win Lubuskich", en: "Grand Lubusz Wine Tasting" },
+        description: {
+          pl: "Degustacja win od kilkunastu producentów z regionu lubuskiego. Możliwość zakupu win i rozmowy z winiarnikami.",
+          en: "Wine tasting from over a dozen Lubusz region producers. Wine purchases and conversations with winemakers.",
+        },
+        date: "2026-09-06",
+        startTime: "14:00",
+        endTime: "21:00",
+        category: "tasting",
+        location: { pl: "Miasteczko Wina, Deptak", en: "Wine Town, Promenade" },
+        coordinates: { lat: 51.9363, lng: 15.5082 },
+      },
+      {
+        id: "koncert-sobota",
+        name: { pl: "Koncert Główny – Scena Winobraniowa", en: "Main Concert – Winobranie Stage" },
+        description: {
+          pl: "Wieczorny koncert gwiazdy polskiej sceny muzycznej na głównej scenie festiwalowej.",
+          en: "Evening concert by a Polish music star on the main festival stage.",
+        },
+        date: "2026-09-06",
+        startTime: "20:00",
+        endTime: "23:00",
+        category: "concert",
+        location: { pl: "Scena Główna, Plac Bohaterów", en: "Main Stage, Bohaterów Square" },
+        coordinates: { lat: 51.9358, lng: 15.5076 },
+      },
+      {
+        id: "warsztaty-wina",
+        name: { pl: "Warsztaty Winiarskie", en: "Winemaking Workshop" },
+        description: {
+          pl: "Praktyczne warsztaty z degustacji i oceny wina. Nauka rozpoznawania aromatów, kolorów i smaków.",
+          en: "Hands-on wine tasting and evaluation workshops. Learn to identify aromas, colors, and flavors.",
+        },
+        date: "2026-09-07",
+        startTime: "11:00",
+        endTime: "14:00",
+        category: "workshop",
+        location: { pl: "Palmiarnia, Park Winny", en: "Palm House, Wine Park" },
+        coordinates: { lat: 51.9345, lng: 15.5023 },
+      },
+      {
+        id: "bus-tour",
+        name: { pl: "Wine Bus – Wycieczka po Winnicach", en: "Wine Bus – Vineyard Tour" },
+        description: {
+          pl: "Autobus zabiera uczestników na wycieczki po okolicznych winnicach z degustacjami na miejscu.",
+          en: "Bus takes participants on tours of surrounding vineyards with on-site tastings.",
+        },
+        date: "2026-09-07",
+        startTime: "10:00",
+        endTime: "17:00",
+        category: "tasting",
+        location: { pl: "Start: Dworzec PKS", en: "Start: Bus Station" },
+        coordinates: { lat: 51.9340, lng: 15.5100 },
+      },
+      {
+        id: "koncert-niedziela",
+        name: { pl: "Koncert Finałowy", en: "Closing Concert" },
+        description: {
+          pl: "Wielki finał Winobrania – koncert zamykający festiwal z pokazem sztucznych ogni.",
+          en: "Grand finale of Winobranie – closing concert with fireworks display.",
+        },
+        date: "2026-09-13",
+        startTime: "19:00",
+        endTime: "23:59",
+        category: "concert",
+        location: { pl: "Scena Główna, Plac Bohaterów", en: "Main Stage, Bohaterów Square" },
+        coordinates: { lat: 51.9358, lng: 15.5076 },
+      },
+    ],
+  },
+];

@@ -1,93 +1,177 @@
-import { useState } from "react";
-import { Search, MapPin, Award, Plus, Check } from "lucide-react";
+import { useMemo } from "react";
+import { Search, MapPin, Star, Heart, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/hooks/use-localized";
+import { Link } from "wouter";
 import vineyardStock from "@/assets/images/vineyard-stock.jpg";
+import { vineyards } from "@shared/data/vineyards";
+import { wines } from "@shared/data/wines";
+import { useGameContext } from "@/contexts/GameContext";
+import { useState } from "react";
 
 export default function WineryList() {
-  const [addedWines, setAddedWines] = useState<Record<string, boolean>>({});
+  const { t: tr } = useTranslation();
+  const { t } = useLocalized();
+  const [search, setSearch] = useState("");
+  const { toggleFavoriteWine, isFavoriteWine } = useGameContext();
 
-  const toggleWine = (id: string) => {
-    setAddedWines(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const filteredVineyards = useMemo(() => {
+    if (!search.trim()) return vineyards;
+    const q = search.toLowerCase();
+    return vineyards.filter(
+      (v) =>
+        v.name.toLowerCase().includes(q) ||
+        t(v.location).toLowerCase().includes(q)
+    );
+  }, [search, t]);
+
+  const filteredWines = useMemo(() => {
+    if (!search.trim()) return wines;
+    const q = search.toLowerCase();
+    return wines.filter(
+      (w) =>
+        w.name.toLowerCase().includes(q) ||
+        w.grape.toLowerCase().includes(q)
+    );
+  }, [search]);
+
+  const getVineyardName = (vineyardId: string) =>
+    vineyards.find((v) => v.id === vineyardId)?.name ?? "";
 
   return (
     <div className="min-h-full bg-background pb-24">
       <div className="p-5 bg-card/80 backdrop-blur-xl border-b border-border sticky top-0 z-30 pt-safe-top">
-        <h1 className="text-2xl font-display font-bold mb-4">Directory</h1>
+        <h1 className="text-3xl font-display font-bold mb-4">
+          {tr("directory.title")}
+        </h1>
         <div className="relative">
-          <Input 
-            placeholder="Search wineries or wines..." 
-            className="w-full bg-muted/50 border-transparent rounded-full pl-11 h-12 shadow-inner"
+          <Search
+            size={18}
+            className="absolute left-3 top-2.5 text-muted-foreground"
           />
-          <Search size={20} className="absolute left-4 top-3.5 text-muted-foreground" />
+          <Input
+            placeholder={tr("directory.searchPlaceholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 bg-muted/50 border-border rounded-xl"
+          />
         </div>
       </div>
 
-      <div className="p-5">
-        <Tabs defaultValue="wineries" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-muted/50 rounded-full h-12">
-            <TabsTrigger value="wineries" className="rounded-full text-sm font-semibold">Wineries</TabsTrigger>
-            <TabsTrigger value="wines" className="rounded-full text-sm font-semibold">Wines</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="wineries" className="space-y-4 animate-in fade-in">
-            {[
-              { name: "Winnica Miłosz", loc: "Łaz", dist: "12km", tags: ["Organic", "Tour"] },
-              { name: "Winnica Julia", loc: "Stary Kisielin", dist: "8km", tags: ["Tasting", "Shop"] },
-              { name: "Winnica Cantina", loc: "Mozów", dist: "15km", tags: ["Restaurant", "Tour"] },
-              { name: "Winnica Equus", loc: "Zabór", dist: "20km", tags: ["Historic", "Shop"] },
-            ].map((winery, i) => (
-              <div key={i} className="flex gap-4 bg-card p-3 rounded-2xl border border-border shadow-sm">
-                <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                  <img src={vineyardStock} alt={winery.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 py-1">
-                  <h3 className="font-bold font-display text-lg">{winery.name}</h3>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <MapPin size={12} /> {winery.loc} • {winery.dist}
-                  </p>
-                  <div className="flex gap-2 mt-2">
-                    {winery.tags.map((tag, j) => (
-                      <span key={j} className="text-[10px] bg-secondary/10 text-secondary px-2 py-0.5 rounded-md font-medium">
+      <Tabs defaultValue="wineries" className="px-5 pt-4">
+        <TabsList className="w-full bg-muted/30 p-1 rounded-xl">
+          <TabsTrigger value="wineries" className="flex-1 rounded-lg text-sm">
+            {tr("directory.wineries")}
+          </TabsTrigger>
+          <TabsTrigger value="wines" className="flex-1 rounded-lg text-sm">
+            {tr("directory.wines")}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="wineries" className="mt-4 space-y-3">
+          {filteredVineyards.map((winery) => (
+            <Link key={winery.id} href={`/vineyards/${winery.id}`}>
+              <div className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border shadow-sm cursor-pointer hover:bg-card/80 transition-colors">
+                <img
+                  src={vineyardStock}
+                  alt={winery.name}
+                  className="w-20 h-20 rounded-xl object-cover shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base font-display truncate">
+                    {winery.name}
+                  </h3>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <MapPin size={12} />
+                    {t(winery.location)} • {winery.distanceFromCenter}km
+                  </div>
+                  {winery.rating && (
+                    <div className="flex items-center gap-1 mt-2">
+                      <Star size={12} className="text-accent fill-accent" />
+                      <span className="text-xs font-semibold">
+                        {winery.rating}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({winery.reviewCount})
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {winery.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="bg-secondary/10 text-secondary text-[10px] px-2 py-0.5 rounded-full font-medium capitalize"
+                      >
                         {tag}
                       </span>
                     ))}
                   </div>
                 </div>
+                <ChevronRight size={18} className="text-muted-foreground shrink-0" />
               </div>
-            ))}
-          </TabsContent>
-          
-          <TabsContent value="wines" className="space-y-4 animate-in fade-in">
-            {[
-              { id: "w1", name: "Riesling 2024", winery: "Winnica Miłosz", type: "White", award: true },
-              { id: "w2", name: "Pinot Noir", winery: "Winnica Julia", type: "White", award: false },
-              { id: "w3", name: "Rondo Reserve", winery: "Winnica Cantina", type: "Red", award: true },
-              { id: "w4", name: "Zweigelt", winery: "Winnica Equus", type: "Red", award: false },
-            ].map((wine) => (
-              <div key={wine.id} className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className={`w-3 h-12 rounded-full ${wine.type === 'Red' ? 'bg-primary' : 'bg-accent'}`}></div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold font-display">{wine.name}</h3>
-                      {wine.award && <Award size={14} className="text-amber-500" />}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{wine.winery}</p>
+            </Link>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="wines" className="mt-4 space-y-3">
+          {filteredWines.map((wine) => {
+            const fav = isFavoriteWine(wine.id);
+            return (
+              <div
+                key={wine.id}
+                className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border shadow-sm"
+              >
+                <Link href={`/wines/${wine.id}`} className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        wine.type === "red"
+                          ? "bg-red-700"
+                          : wine.type === "rose"
+                            ? "bg-pink-400"
+                            : wine.type === "sparkling"
+                              ? "bg-amber-300"
+                              : "bg-amber-100 border border-amber-300"
+                      }`}
+                    />
+                    <h3 className="font-bold text-sm font-display truncate">
+                      {wine.name}
+                    </h3>
+                    <ChevronRight size={14} className="text-muted-foreground shrink-0" />
                   </div>
-                </div>
-                <button 
-                  onClick={() => toggleWine(wine.id)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${addedWines[wine.id] ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {getVineyardName(wine.vineyardId)} • {wine.grape}
+                  </p>
+                  {wine.rating && (
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <Star size={11} className="text-accent fill-accent" />
+                      <span className="text-xs font-semibold">
+                        {wine.rating}
+                      </span>
+                    </div>
+                  )}
+                </Link>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFavoriteWine(wine.id);
+                  }}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                    fav
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
                 >
-                  {addedWines[wine.id] ? <Check size={18} /> : <Plus size={18} />}
+                  <Heart size={16} fill={fav ? "currentColor" : "none"} />
                 </button>
               </div>
-            ))}
-          </TabsContent>
-        </Tabs>
-      </div>
+            );
+          })}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

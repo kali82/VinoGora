@@ -1,0 +1,156 @@
+import type { Cellar } from "../types";
+
+export const cellars: Cellar[] = [
+  {
+    id: "muzeum-wina",
+    name: "Muzeum Wina",
+    slug: "muzeum-wina",
+    location: { pl: "Centrum Zielonej Góry", en: "Zielona Góra city center" },
+    address: "al. Niepodległości 15, 65-048 Zielona Góra",
+    coordinates: { lat: 51.9358, lng: 15.5064 },
+    description: {
+      pl: "Jedyne w Polsce Muzeum Wina, mieszczące się w zabytkowych piwnicach Muzeum Ziemi Lubuskiej – dawnej siedziby starostwa powiatowego. Ekspozycja od 2006 roku prezentuje historię winiarstwa regionu, zabytkowe prasy, beczki i narzędzia winiarskie.",
+      en: "The only Wine Museum in Poland, housed in the historic cellars of the Lubusz Land Museum – a former district office. The exhibition since 2006 presents the history of regional winemaking, antique presses, barrels, and winemaking tools.",
+    },
+    shortDescription: {
+      pl: "Jedyne Muzeum Wina w Polsce",
+      en: "The only Wine Museum in Poland",
+    },
+    yearBuilt: 1832,
+    historicalSignificance: {
+      pl: "Piwnice dawnego starostwa powiatowego. Od 2006 roku jedyne Muzeum Wina w Polsce.",
+      en: "Cellars of the former district office. Since 2006, the only Wine Museum in Poland.",
+    },
+    imageUrl: "/images/cellars/muzeum-wina.jpg",
+    openingHours: {
+      pl: "Wt-Pt: 10:00-17:00, Sob: 10:00-16:00, Nd-Pn: zamknięte",
+      en: "Tue-Fri: 10:00-17:00, Sat: 10:00-16:00, Sun-Mon: closed",
+    },
+    visitDurationMinutes: 45,
+    order: 1,
+  },
+  {
+    id: "piwnica-raetscha",
+    name: "Piwnica Wytwórni Raetscha",
+    slug: "piwnica-raetscha",
+    location: { pl: "ul. Chrobrego", en: "Chrobrego Street" },
+    address: "ul. Chrobrego, 65-043 Zielona Góra",
+    coordinates: { lat: 51.9372, lng: 15.5048 },
+    description: {
+      pl: "Historyczna piwnica wytwórni winiaków Raetscha z 1895 roku. Zachowana tłocznia i leżakownia stanowią unikatowy zabytek industrialny związany z winiarską historią miasta. Jeden z najciekawszych punktów Szlaku Winiarskiego.",
+      en: "Historic cellar of the Raetsch brandy distillery from 1895. The preserved press and aging cellar are unique industrial heritage related to the city's winemaking history. One of the most interesting stops on the Wine Trail.",
+    },
+    shortDescription: {
+      pl: "Zabytkowa wytwórnia winiaków z 1895 r.",
+      en: "Historic brandy distillery from 1895",
+    },
+    yearBuilt: 1895,
+    historicalSignificance: {
+      pl: "Wytwórnia winiaków z końca XIX w. z zachowaną tłocznią i leżakownią.",
+      en: "Late 19th-century brandy distillery with preserved press and aging rooms.",
+    },
+    imageUrl: "/images/cellars/raetscha.jpg",
+    visitDurationMinutes: 30,
+    order: 2,
+  },
+  {
+    id: "pomnik-bachusa",
+    name: "Pomnik Bachusa",
+    slug: "pomnik-bachusa",
+    location: { pl: "Deptak, Centrum", en: "Promenade, Center" },
+    address: "ul. Kupiecka, 65-058 Zielona Góra",
+    coordinates: { lat: 51.9365, lng: 15.5075 },
+    description: {
+      pl: "Pomnik Bachusa – boga wina – odsłonięty w 2010 roku na deptaku w centrum Zielonej Góry. Symbol winiarskiej tradycji miasta, popularny punkt spotkań i fotografii turystycznej.",
+      en: "Statue of Bacchus – god of wine – unveiled in 2010 on the promenade in Zielona Góra's center. A symbol of the city's winemaking tradition, popular meeting point and tourist photo spot.",
+    },
+    shortDescription: {
+      pl: "Symbol winiarskiej tradycji miasta",
+      en: "Symbol of the city's wine tradition",
+    },
+    yearBuilt: 2010,
+    historicalSignificance: {
+      pl: "Współczesny pomnik nawiązujący do wielowiekowej tradycji winiarskiej Zielonej Góry.",
+      en: "Modern monument referencing Zielona Góra's centuries-old winemaking tradition.",
+    },
+    imageUrl: "/images/cellars/bacchus.jpg",
+    visitDurationMinutes: 10,
+    order: 3,
+  },
+  {
+    id: "rzezba-emmy",
+    name: "Rzeźba Winiarki Emmy",
+    slug: "rzezba-emmy",
+    location: { pl: "Park Winny", en: "Wine Park" },
+    address: "ul. Ułańska, 65-033 Zielona Góra",
+    coordinates: { lat: 51.9381, lng: 15.5035 },
+    description: {
+      pl: "Rzeźba młodej winiarki z koszem winogron z 1914 roku, znana jako Emma. Jeden z najstarszych zachowanych zabytków związanych z winiarstwem w Zielonej Górze, umieszczony w malowniczym Parku Winnym.",
+      en: "A 1914 sculpture of a young wine-maker girl with a basket of grapes, known as Emma. One of the oldest preserved monuments related to winemaking in Zielona Góra, set in the picturesque Wine Park.",
+    },
+    shortDescription: {
+      pl: "Zabytkowa rzeźba winiarki z 1914 r.",
+      en: "Historic wine-maker sculpture from 1914",
+    },
+    yearBuilt: 1914,
+    historicalSignificance: {
+      pl: "Jeden z najstarszych zabytków winiarskich w mieście, symbol tradycji winobrania.",
+      en: "One of the oldest winemaking monuments in the city, symbol of the harvest tradition.",
+    },
+    imageUrl: "/images/cellars/emma.jpg",
+    visitDurationMinutes: 10,
+    order: 4,
+  },
+  {
+    id: "palmiarnia",
+    name: "Palmiarnia i Winiarnia Miejska",
+    slug: "palmiarnia",
+    location: { pl: "Park Winny", en: "Wine Park" },
+    address: "ul. Wrocławska 12A, 65-427 Zielona Góra",
+    coordinates: { lat: 51.9345, lng: 15.5023 },
+    description: {
+      pl: "Zabytkowa palmiarnia z XIX wieku, otoczona historycznymi winnicami miejskimi. Obecnie pełni funkcję centrum edukacyjnego i wystawienniczego poświęconego tradycji winiarskiej regionu.",
+      en: "A 19th-century historic palm house surrounded by historical urban vineyards. Currently serves as an educational and exhibition center dedicated to the region's winemaking tradition.",
+    },
+    shortDescription: {
+      pl: "XIX-wieczna palmiarnia wśród winnic",
+      en: "19th-century palm house among vineyards",
+    },
+    yearBuilt: 1860,
+    historicalSignificance: {
+      pl: "Zabytkowa palmiarnia otoczona miejskimi winnicami – świadectwo ogrodniczej i winiarskiej tradycji Zielonej Góry.",
+      en: "Historic palm house surrounded by urban vineyards – testimony to Zielona Góra's horticultural and winemaking tradition.",
+    },
+    imageUrl: "/images/cellars/palmiarnia.jpg",
+    openingHours: {
+      pl: "Wt-Nd: 10:00-18:00",
+      en: "Tue-Sun: 10:00-18:00",
+    },
+    visitDurationMinutes: 40,
+    order: 5,
+  },
+  {
+    id: "hotel-russischer-kaiser",
+    name: "Hotel Russischer Kaiser",
+    slug: "hotel-russischer-kaiser",
+    location: { pl: "Stare Miasto", en: "Old Town" },
+    address: "ul. Jedności 1, 65-018 Zielona Góra",
+    coordinates: { lat: 51.9362, lng: 15.5092 },
+    description: {
+      pl: "Historyczny zajazd z pierwszej połowy XIX wieku, niegdyś popularny wśród kupców i podróżnych. Piwnice budynku wykorzystywano do przechowywania win z okolicznych winnic.",
+      en: "A historic inn from the first half of the 19th century, once popular among merchants and travelers. The building's cellars were used to store wines from surrounding vineyards.",
+    },
+    shortDescription: {
+      pl: "Historyczny zajazd z XIX-wiecznymi piwnicami",
+      en: "Historic inn with 19th-century cellars",
+    },
+    yearBuilt: 1820,
+    historicalSignificance: {
+      pl: "Zabytkowy zajazd z piwnicami winnymi, świadek świetności handlu winiarskiego w regionie.",
+      en: "Historic inn with wine cellars, witness to the glory of regional wine trade.",
+    },
+    imageUrl: "/images/cellars/russischer-kaiser.jpg",
+    visitDurationMinutes: 20,
+    order: 6,
+  },
+];
