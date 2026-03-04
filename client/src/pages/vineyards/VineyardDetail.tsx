@@ -15,14 +15,21 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocalized } from "@/hooks/use-localized";
-import { vineyards } from "@shared/data/vineyards";
 import { wines as allWines } from "@shared/data/wines";
+import { useVineyard } from "@/hooks/useApiData";
 import MapView, { type MapMarker } from "@/components/map/MapView";
 import CommentSection from "@/components/comments/CommentSection";
 import CheckInButton from "@/components/checkin/CheckInButton";
 import SwipeGallery from "@/components/ui/SwipeGallery";
 import { useGameContext } from "@/contexts/GameContext";
+import { useRating } from "@/hooks/useRating";
 import vineyardStock from "@/assets/images/vineyard-stock.jpg";
+
+function isCurrentlyOpen(): boolean | null {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour >= 10 && hour < 18 ? true : hour >= 18 || hour < 10 ? false : null;
+}
 
 export default function VineyardDetail() {
   const { t: tr } = useTranslation();
@@ -30,10 +37,7 @@ export default function VineyardDetail() {
   const [, params] = useRoute("/vineyards/:id");
   const { toggleFavoriteWine, isFavoriteWine } = useGameContext();
 
-  const vineyard = useMemo(
-    () => vineyards.find((v) => v.id === params?.id || v.slug === params?.id),
-    [params?.id]
-  );
+  const { data: vineyard } = useVineyard(params?.id);
 
   const vineyardWines = useMemo(
     () =>
@@ -41,6 +45,15 @@ export default function VineyardDetail() {
         ? allWines.filter((w) => vineyard.wines.includes(w.id))
         : [],
     [vineyard]
+  );
+
+  const openStatus = vineyard?.openingHours ? isCurrentlyOpen() : null;
+
+  const dynamicRating = useRating(
+    "vineyard",
+    vineyard?.id ?? "",
+    vineyard?.rating,
+    vineyard?.reviewCount
   );
 
   if (!vineyard) {
@@ -119,22 +132,36 @@ export default function VineyardDetail() {
                 )}
               </div>
             </div>
-            {vineyard.rating && (
+            {(dynamicRating.average > 0 || vineyard.rating) && (
               <div className="flex items-center gap-1 bg-accent/30 px-3 py-1.5 rounded-full shrink-0">
                 <Star size={14} className="text-accent fill-accent" />
-                <span className="text-sm font-bold">{vineyard.rating}</span>
+                <span className="text-sm font-bold">
+                  {dynamicRating.average || vineyard.rating}
+                </span>
                 <span className="text-xs text-muted-foreground">
-                  ({vineyard.reviewCount})
+                  ({dynamicRating.count || vineyard.reviewCount || 0})
                 </span>
               </div>
             )}
           </div>
 
           <div className="flex gap-2 mt-3 flex-wrap">
+            {openStatus !== null && (
+              <span
+                className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 ${
+                  openStatus
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                    : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${openStatus ? "bg-green-500" : "bg-red-500"}`} />
+                {openStatus ? tr("vineyards.open") : tr("vineyards.closed")}
+              </span>
+            )}
             {vineyard.organic && (
-              <span className="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+              <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
                 <Leaf size={12} />
-                Organic
+                {tr("vineyards.organic")}
               </span>
             )}
             {vineyard.tags.map((tag) => (

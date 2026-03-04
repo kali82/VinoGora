@@ -1,5 +1,15 @@
-import { useMemo } from "react";
-import { Wine, Star, StarHalf, Heart, Trash2, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Wine,
+  Star,
+  StarHalf,
+  Heart,
+  Trash2,
+  ChevronRight,
+  Pencil,
+  Check,
+  StickyNote,
+} from "lucide-react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLocalized } from "@/hooks/use-localized";
@@ -27,10 +37,74 @@ function StarRating({ rating }: { rating: number }) {
   return <div className="flex gap-0.5">{stars}</div>;
 }
 
+function NoteEditor({
+  wineId,
+  note,
+  onSave,
+}: {
+  wineId: string;
+  note: string;
+  onSave: (wineId: string, text: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note);
+
+  const handleSave = () => {
+    onSave(wineId, draft);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="mt-3 flex gap-2">
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={t("favorites.notePlaceholder")}
+          className="flex-1 bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none min-h-[60px]"
+          autoFocus
+        />
+        <button
+          onClick={handleSave}
+          className="w-10 h-10 bg-primary text-primary-foreground rounded-xl flex items-center justify-center shrink-0 self-end active:scale-95 transition-transform"
+        >
+          <Check size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  if (note) {
+    return (
+      <button
+        onClick={() => { setDraft(note); setEditing(true); }}
+        className="mt-3 flex items-start gap-2 w-full text-left group"
+      >
+        <StickyNote size={13} className="text-primary mt-0.5 shrink-0" />
+        <p className="text-xs text-muted-foreground italic flex-1 line-clamp-2">
+          {note}
+        </p>
+        <Pencil size={12} className="text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5" />
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(""); setEditing(true); }}
+      className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+    >
+      <Pencil size={12} />
+      {t("favorites.addNote")}
+    </button>
+  );
+}
+
 export default function MyWines() {
   const { t } = useTranslation();
   const { t: tl } = useLocalized();
-  const { state, toggleFavoriteWine } = useGameContext();
+  const { state, toggleFavoriteWine, setWineNote, getWineNote } = useGameContext();
 
   const favoriteWines = useMemo(
     () =>
@@ -111,6 +185,12 @@ export default function MyWines() {
                   {tl(wine.description)}
                 </p>
               </Link>
+
+              <NoteEditor
+                wineId={wine.id}
+                note={getWineNote(wine.id)}
+                onSave={setWineNote}
+              />
 
               <div className="flex justify-end mt-3">
                 <button

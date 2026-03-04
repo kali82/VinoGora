@@ -38,13 +38,14 @@ export default function CheckInButton({
   showQR = true,
 }: CheckInButtonProps) {
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuthContext();
+  const { user, isAuthenticated } = useAuthContext();
   const { addCheckIn, canCheckIn } = useGameContext();
   const [showLogin, setShowLogin] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [lastPosition, setLastPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   const allowed = canCheckIn(targetId);
 
@@ -80,6 +81,10 @@ export default function CheckInButton({
         return;
       }
 
+      setLastPosition({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      });
       setShowCamera(true);
     } catch {
       toast.error(t("detail.locationError"));
@@ -91,19 +96,25 @@ export default function CheckInButton({
   const handlePhotoCapture = useCallback(
     (photoUrl: string) => {
       setShowCamera(false);
-      addCheckIn(targetType, targetId, "gps", photoUrl);
+      addCheckIn(
+        targetType, targetId, "gps", photoUrl,
+        user?.uid, lastPosition?.lat, lastPosition?.lng
+      );
       setChecked(true);
       toast.success(t("detail.checkInSuccess"));
     },
-    [targetType, targetId, addCheckIn, t],
+    [targetType, targetId, addCheckIn, t, user, lastPosition],
   );
 
   const handleSkipPhoto = useCallback(() => {
     setShowCamera(false);
-    addCheckIn(targetType, targetId, "gps");
+    addCheckIn(
+      targetType, targetId, "gps", undefined,
+      user?.uid, lastPosition?.lat, lastPosition?.lng
+    );
     setChecked(true);
     toast.success(t("detail.checkInSuccess"));
-  }, [targetType, targetId, addCheckIn, t]);
+  }, [targetType, targetId, addCheckIn, t, user, lastPosition]);
 
   const handleQRScan = useCallback(
     (data: string) => {
@@ -111,7 +122,7 @@ export default function CheckInButton({
       try {
         const parsed = JSON.parse(data);
         if (parsed.targetId === targetId || parsed.targetType === targetType) {
-          addCheckIn(targetType, targetId, "qr");
+          addCheckIn(targetType, targetId, "qr", undefined, user?.uid);
           setChecked(true);
           toast.success(t("detail.checkInSuccess"));
         } else {
@@ -119,7 +130,7 @@ export default function CheckInButton({
         }
       } catch {
         if (data.includes(targetId)) {
-          addCheckIn(targetType, targetId, "qr");
+          addCheckIn(targetType, targetId, "qr", undefined, user?.uid);
           setChecked(true);
           toast.success(t("detail.checkInSuccess"));
         } else {
@@ -127,7 +138,7 @@ export default function CheckInButton({
         }
       }
     },
-    [targetType, targetId, addCheckIn, t],
+    [targetType, targetId, addCheckIn, t, user],
   );
 
   const openQR = useCallback(() => {

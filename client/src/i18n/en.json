@@ -36,7 +36,8 @@
     "navigate": "Navigate",
     "details": "Details",
     "kmFromCenter": "{{km}} km from center",
-    "noResults": "No vineyards found"
+    "noResults": "No vineyards found",
+    "organic": "Organic"
   },
   "cellars": {
     "title": "Cellar Route",
@@ -88,7 +89,9 @@
     "editNotes": "Edit Notes",
     "addMore": "Add more wines",
     "browseDirectory": "Browse directory to add favorites",
-    "noFavorites": "You don't have any favorite wines yet"
+    "noFavorites": "You don't have any favorite wines yet",
+    "addNote": "Add a note",
+    "notePlaceholder": "Your impressions, what it pairs best with..."
   },
   "profile": {
     "title": "Profile",
@@ -166,12 +169,43 @@
     "invalidCode": "Invalid QR code",
     "success": "QR code scanned! Visit confirmed"
   },
+  "push": {
+    "title": "Enable notifications",
+    "description": "Get notified about nearby vineyards, festivals, and new reviews",
+    "enable": "Enable",
+    "disabled": "Notifications disabled"
+  },
   "pwa": {
     "installTitle": "Install VinoGóra",
     "installDescription": "Add the app to your home screen for faster access",
     "install": "Install",
     "dismiss": "Not now",
     "offline": "You are offline. Some features may be unavailable."
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "empty": "No players on the leaderboard yet. Be the first!",
+    "you": "You",
+    "pts": "pts",
+    "viewAll": "View leaderboard"
+  },
+  "filters": {
+    "title": "Filters",
+    "wineType": "Wine type",
+    "all": "All",
+    "red": "Red",
+    "white": "White",
+    "rose": "Rosé",
+    "sparkling": "Sparkling",
+    "organic": "Organic only",
+    "priceRange": "Price range",
+    "sortBy": "Sort by",
+    "sortName": "Name",
+    "sortRating": "Rating",
+    "sortPrice": "Price",
+    "apply": "Apply",
+    "reset": "Clear filters",
+    "results": "{{count}} results"
   },
   "common": {
     "back": "Back",

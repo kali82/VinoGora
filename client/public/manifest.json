@@ -23,6 +23,18 @@
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [],
@@ -30,19 +42,29 @@
     {
       "name": "Winnice",
       "short_name": "Winnice",
+      "description": "Odkryj lokalne winnice",
       "url": "/vineyards",
       "icons": []
     },
     {
       "name": "Szlak Piwnic",
       "short_name": "Piwnice",
+      "description": "Zaplanuj trasę degustacji",
       "url": "/cellars",
       "icons": []
     },
     {
       "name": "Winobranie",
       "short_name": "Festiwal",
+      "description": "Program festiwalu",
       "url": "/festival",
+      "icons": []
+    },
+    {
+      "name": "Katalog Win",
+      "short_name": "Katalog",
+      "description": "Przeglądaj wina i winnice",
+      "url": "/directory",
       "icons": []
     }
   ]

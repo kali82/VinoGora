@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from "react";
-import { Camera, X, Check, RotateCcw } from "lucide-react";
+import { Camera, X, Check, RotateCcw, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { uploadPhoto } from "@/lib/uploadPhoto";
 
 interface PhotoCaptureProps {
   open: boolean;
@@ -67,11 +68,19 @@ export default function PhotoCapture({ open, onClose, onCapture }: PhotoCaptureP
     stopCamera();
   }, [stopCamera]);
 
-  const handleConfirm = useCallback(() => {
-    if (preview) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleConfirm = useCallback(async () => {
+    if (!preview) return;
+    setUploading(true);
+    try {
+      const url = await uploadPhoto(preview, "checkins");
+      onCapture(url);
+    } catch {
       onCapture(preview);
-      setPreview(null);
     }
+    setPreview(null);
+    setUploading(false);
   }, [preview, onCapture]);
 
   const handleRetake = useCallback(() => {
@@ -134,9 +143,10 @@ export default function PhotoCapture({ open, onClose, onCapture }: PhotoCaptureP
             </button>
             <button
               onClick={handleConfirm}
-              className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30"
+              disabled={uploading}
+              className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 disabled:opacity-60"
             >
-              <Check size={28} />
+              {uploading ? <Loader2 size={28} className="animate-spin" /> : <Check size={28} />}
             </button>
           </>
         ) : (

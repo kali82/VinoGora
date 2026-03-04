@@ -9,6 +9,7 @@ import {
   Star,
   ChevronRight,
   TrendingUp,
+  Trophy,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -20,6 +21,7 @@ import { vineyards } from "@shared/data/vineyards";
 import { cellars } from "@shared/data/cellars";
 import { useGameContext } from "@/contexts/GameContext";
 import { useAuthContext } from "@/contexts/AuthContext";
+import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 
 export default function Home() {
   const { t: tr } = useTranslation();
@@ -40,6 +42,7 @@ export default function Home() {
 
   return (
     <div className="p-4 space-y-6 animate-in fade-in duration-500 pb-8 pt-safe">
+      <NotificationPrompt />
       <header className="pt-4 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-display font-bold text-primary">
@@ -111,6 +114,24 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
+        </section>
+      )}
+
+      {/* Leaderboard link */}
+      {isAuthenticated && (
+        <section>
+          <Link href="/leaderboard">
+            <div className="flex items-center gap-3 p-4 bg-card rounded-2xl border border-border cursor-pointer hover:bg-card/80 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                <Trophy size={18} className="text-accent-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-display font-bold">{tr("leaderboard.title")}</p>
+                <p className="text-[10px] text-muted-foreground">{tr("leaderboard.viewAll")}</p>
+              </div>
+              <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+            </div>
+          </Link>
         </section>
       )}
 

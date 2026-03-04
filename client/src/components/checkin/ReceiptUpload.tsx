@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useGameContext } from "@/contexts/GameContext";
 import LoginModal from "@/components/auth/LoginModal";
+import { apiRequest } from "@/lib/queryClient";
+import { uploadPhoto } from "@/lib/uploadPhoto";
 import { toast } from "sonner";
 
 export default function ReceiptUpload() {
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuthContext();
+  const { user, isAuthenticated } = useAuthContext();
   const { addPoints } = useGameContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showLogin, setShowLogin] = useState(false);
@@ -35,12 +37,20 @@ export default function ReceiptUpload() {
     if (!preview) return;
 
     setUploading(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const photoUrl = await uploadPhoto(preview, "receipts");
+      await apiRequest("POST", "/api/purchase", {
+        userId: user!.uid,
+        photoUrl,
+      });
+    } catch {
+      // server sync or upload failed -- still award points locally
+    }
     addPoints(100);
     setDone(true);
     setUploading(false);
     toast.success(t("receipt.uploadSuccess"));
-  }, [isAuthenticated, preview, addPoints, t]);
+  }, [isAuthenticated, preview, addPoints, t, user]);
 
   const handleReset = useCallback(() => {
     setPreview(null);
@@ -59,8 +69,8 @@ export default function ReceiptUpload() {
   if (done) {
     return (
       <div className="bg-card rounded-2xl border border-border p-5 text-center space-y-3">
-        <div className="w-14 h-14 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-          <Check size={28} className="text-green-600" />
+        <div className="w-14 h-14 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <Check size={28} className="text-green-600 dark:text-green-400" />
         </div>
         <p className="font-display font-bold">{t("receipt.thankYou")}</p>
         <p className="text-sm text-muted-foreground">{t("receipt.pointsAdded")}</p>

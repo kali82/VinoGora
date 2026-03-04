@@ -16,10 +16,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocalized } from "@/hooks/use-localized";
-import { wines } from "@shared/data/wines";
 import { vineyards } from "@shared/data/vineyards";
+import { useWine } from "@/hooks/useApiData";
 import CommentSection from "@/components/comments/CommentSection";
 import { useGameContext } from "@/contexts/GameContext";
+import { useRating } from "@/hooks/useRating";
 
 function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   const stars = [];
@@ -78,10 +79,7 @@ export default function WineDetail() {
   const [, params] = useRoute("/wines/:id");
   const { toggleFavoriteWine, isFavoriteWine } = useGameContext();
 
-  const wine = useMemo(
-    () => wines.find((w) => w.id === params?.id),
-    [params?.id]
-  );
+  const { data: wine } = useWine(params?.id);
 
   const vineyard = useMemo(
     () => (wine ? vineyards.find((v) => v.id === wine.vineyardId) : undefined),
@@ -105,6 +103,7 @@ export default function WineDetail() {
 
   const config = wineTypeConfig[wine.type];
   const fav = isFavoriteWine(wine.id);
+  const dynamicRating = useRating("wine", wine.id, wine.rating, wine.reviewCount);
 
   return (
     <div className="min-h-full bg-background pb-24 animate-in fade-in duration-300">
@@ -130,8 +129,12 @@ export default function WineDetail() {
         </button>
 
         <div className="relative z-10 flex items-end gap-5 px-5 pb-6 w-full">
-          <div className="w-20 h-28 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 flex items-center justify-center shrink-0">
-            <Wine size={36} className="text-white/80" />
+          <div className="w-20 h-28 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 flex items-center justify-center shrink-0 overflow-hidden">
+            {wine.imageUrl ? (
+              <img src={wine.imageUrl} alt={wine.name} className="w-full h-full object-cover" />
+            ) : (
+              <Wine size={36} className="text-white/80" />
+            )}
           </div>
           <div className="flex-1 min-w-0 pb-1">
             <span
@@ -159,12 +162,14 @@ export default function WineDetail() {
         <div className="bg-card rounded-3xl p-5 shadow-xl border border-border">
           {/* Rating + Quick stats */}
           <div className="flex items-center justify-between">
-            {wine.rating && (
+            {(dynamicRating.average > 0 || wine.rating) && (
               <div className="flex items-center gap-2.5">
-                <StarRating rating={wine.rating} />
-                <span className="text-lg font-bold">{wine.rating}</span>
+                <StarRating rating={dynamicRating.average || wine.rating || 0} />
+                <span className="text-lg font-bold">
+                  {dynamicRating.average || wine.rating}
+                </span>
                 <span className="text-sm text-muted-foreground">
-                  ({wine.reviewCount} {tr("wine.reviews")})
+                  ({dynamicRating.count || wine.reviewCount || 0} {tr("wine.reviews")})
                 </span>
               </div>
             )}

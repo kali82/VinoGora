@@ -6,10 +6,15 @@ import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { GameProvider } from "@/contexts/GameContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import NotFound from "@/pages/not-found";
 import MobileLayout from "@/components/layout/MobileLayout";
 import OfflineBanner from "@/components/pwa/OfflineBanner";
 import { useProximity } from "@/hooks/useProximity";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useGameContext } from "@/contexts/GameContext";
+import { flushQueue } from "@/lib/offlineQueue";
+import { useEffect } from "react";
 
 import "@/i18n";
 
@@ -23,9 +28,35 @@ import WineryList from "@/pages/directory/WineryList";
 import WineDetail from "@/pages/wines/WineDetail";
 import MyWines from "@/pages/favorites/MyWines";
 import Badges from "@/pages/profile/Badges";
+import Leaderboard from "@/pages/profile/Leaderboard";
 
 function ProximityWatcher() {
   useProximity();
+  return null;
+}
+
+function ProfileSync() {
+  const { user, isAuthenticated } = useAuthContext();
+  const { syncProfile } = useGameContext();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      syncProfile(
+        user.uid,
+        user.displayName || "User",
+        user.email || undefined,
+        user.photoURL || undefined
+      );
+      flushQueue().catch(() => {});
+    }
+  }, [isAuthenticated, user, syncProfile]);
+
+  useEffect(() => {
+    const handler = () => { flushQueue().catch(() => {}); };
+    window.addEventListener("online", handler);
+    return () => window.removeEventListener("online", handler);
+  }, []);
+
   return null;
 }
 
@@ -43,6 +74,7 @@ function Router() {
         <Route path="/directory" component={WineryList} />
         <Route path="/favorites" component={MyWines} />
         <Route path="/profile" component={Badges} />
+        <Route path="/leaderboard" component={Leaderboard} />
         <Route component={NotFound} />
       </Switch>
     </MobileLayout>
@@ -51,19 +83,22 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <GameProvider>
-          <TooltipProvider>
-            <OfflineBanner />
-            <Toaster />
-            <SonnerToaster position="top-center" richColors />
-            <ProximityWatcher />
-            <Router />
-          </TooltipProvider>
-        </GameProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <GameProvider>
+            <TooltipProvider>
+              <OfflineBanner />
+              <Toaster />
+              <SonnerToaster position="top-center" richColors />
+              <ProximityWatcher />
+              <ProfileSync />
+              <Router />
+            </TooltipProvider>
+          </GameProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

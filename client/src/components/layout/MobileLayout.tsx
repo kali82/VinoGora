@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Home, Map, Heart, User, List } from "lucide-react";
+import { Home, Map, Heart, User, List, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@/contexts/ThemeContext";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 
 function LanguageSwitcher() {
@@ -15,10 +16,24 @@ function LanguageSwitcher() {
   return (
     <button
       onClick={toggle}
-      className="fixed top-3 right-3 z-[60] bg-card/90 backdrop-blur-md border border-border rounded-full px-2.5 py-1 text-xs font-bold shadow-md hover:bg-card transition-colors"
+      className="bg-card/90 backdrop-blur-md border border-border rounded-full px-2.5 py-1 text-xs font-bold shadow-md hover:bg-card transition-colors"
       aria-label="Switch language"
     >
       {currentLang === "pl" ? "EN" : "PL"}
+    </button>
+  );
+}
+
+function ThemeToggle() {
+  const { resolved, toggle } = useTheme();
+
+  return (
+    <button
+      onClick={toggle}
+      className="bg-card/90 backdrop-blur-md border border-border rounded-full w-7 h-7 flex items-center justify-center shadow-md hover:bg-card transition-colors"
+      aria-label="Toggle theme"
+    >
+      {resolved === "dark" ? <Sun size={13} /> : <Moon size={13} />}
     </button>
   );
 }
@@ -35,7 +50,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
     { icon: User, label: t("nav.profile"), href: "/profile" },
   ];
 
-  const hideLanguageSwitcher =
+  const hideControls =
     location === "/vineyards" ||
     location === "/cellars" ||
     location.startsWith("/vineyards/") ||
@@ -43,7 +58,12 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="h-[100dvh] bg-background pb-20 flex flex-col mx-auto relative overflow-hidden md:max-w-2xl lg:max-w-4xl xl:max-w-5xl md:shadow-2xl">
-      {!hideLanguageSwitcher && <LanguageSwitcher />}
+      {!hideControls && (
+        <div className="fixed top-3 right-3 z-[60] flex items-center gap-1.5">
+          <ThemeToggle />
+          <LanguageSwitcher />
+        </div>
+      )}
       <main className="flex-1 overflow-y-auto w-full min-h-0">
         {children}
       </main>

@@ -108,6 +108,8 @@ export interface PointAction {
 export interface UserComment {
   id: string;
   userId: string;
+  userName?: string;
+  userAvatar?: string;
   targetType: "vineyard" | "cellar" | "wine";
   targetId: string;
   rating: number;

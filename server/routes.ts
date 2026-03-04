@@ -1,11 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
-import { vineyards } from "@shared/data/vineyards";
-import { cellars } from "@shared/data/cellars";
-import { wines } from "@shared/data/wines";
-import { festivals } from "@shared/data/festivals";
-import { badges, pointActions } from "@shared/data/badges";
 
 function getDistanceMeters(
   lat1: number, lng1: number, lat2: number, lng2: number
@@ -21,20 +16,20 @@ function getDistanceMeters(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function getTargetCoordinates(
+async function getTargetCoordinates(
   targetType: string, targetId: string
-): { lat: number; lng: number } | null {
+): Promise<{ lat: number; lng: number } | null> {
   if (targetType === "vineyard") {
-    const v = vineyards.find((x) => x.id === targetId);
+    const v = await storage.getVineyard(targetId);
     return v?.coordinates ?? null;
   }
   if (targetType === "cellar") {
-    const c = cellars.find((x) => x.id === targetId);
+    const c = await storage.getCellar(targetId);
     return c?.coordinates ?? null;
   }
   if (targetType === "festival") {
-    const f = festivals[0];
-    return f?.coordinates ?? null;
+    const festivals = await storage.getFestivals();
+    return festivals[0]?.coordinates ?? null;
   }
   return null;
 }
@@ -43,13 +38,16 @@ async function evaluateAndUnlockBadges(uid: string) {
   const profile = await storage.getProfile(uid);
   if (!profile) return;
 
+  const vineyardCount = await storage.getVineyardCount();
+  const cellarCount = await storage.getCellarCount();
+
   if (profile.visitedVineyardIds.length >= 1)
     await storage.unlockBadge(uid, "first-sip");
   if (profile.visitedVineyardIds.length >= 5)
     await storage.unlockBadge(uid, "explorer");
-  if (profile.visitedVineyardIds.length >= vineyards.length)
+  if (profile.visitedVineyardIds.length >= vineyardCount)
     await storage.unlockBadge(uid, "sommelier");
-  if (profile.visitedCellarIds.length >= cellars.length)
+  if (profile.visitedCellarIds.length >= cellarCount)
     await storage.unlockBadge(uid, "trail-master");
   if (profile.favoriteWineIds.length >= 20)
     await storage.unlockBadge(uid, "collector");
@@ -66,55 +64,90 @@ export async function registerRoutes(
   app: Express,
 ): Promise<Server> {
 
-  // ── Static data ──────────────────────────────────────────────
-
-  app.get("/api/vineyards", (_req: Request, res: Response) => {
-    res.json(vineyards);
+  app.use("/api", (_req: Request, res: Response, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
   });
 
-  app.get("/api/vineyards/:id", (req: Request, res: Response) => {
-    const v = vineyards.find((x) => x.id === req.params.id || x.slug === req.params.id);
+  // ── Static data ──────────────────────────────────────────────
+
+  app.get("/api/vineyards", async (_req: Request, res: Response) => {
+    const data = await storage.getVineyards();
+    res.json(data);
+  });
+
+  app.get("/api/vineyards/:id", async (req: Request, res: Response) => {
+    const v = await storage.getVineyard(req.params.id as string);
     if (!v) return res.status(404).json({ message: "Vineyard not found" });
     res.json(v);
   });
 
-  app.get("/api/cellars", (_req: Request, res: Response) => {
-    res.json(cellars);
+  app.get("/api/cellars", async (_req: Request, res: Response) => {
+    const data = await storage.getCellars();
+    res.json(data);
   });
 
-  app.get("/api/cellars/:id", (req: Request, res: Response) => {
-    const c = cellars.find((x) => x.id === req.params.id || x.slug === req.params.id);
+  app.get("/api/cellars/:id", async (req: Request, res: Response) => {
+    const c = await storage.getCellar(req.params.id as string);
     if (!c) return res.status(404).json({ message: "Cellar not found" });
     res.json(c);
   });
 
-  app.get("/api/wines", (_req: Request, res: Response) => {
-    res.json(wines);
+  app.get("/api/wines", async (_req: Request, res: Response) => {
+    const data = await storage.getWines();
+    res.json(data);
   });
 
-  app.get("/api/wines/:id", (req: Request, res: Response) => {
-    const w = wines.find((x) => x.id === req.params.id);
+  app.get("/api/wines/:id", async (req: Request, res: Response) => {
+    const w = await storage.getWine(req.params.id as string);
     if (!w) return res.status(404).json({ message: "Wine not found" });
     res.json(w);
   });
 
-  app.get("/api/festivals", (_req: Request, res: Response) => {
-    res.json(festivals);
+  app.get("/api/festivals", async (_req: Request, res: Response) => {
+    const data = await storage.getFestivals();
+    res.json(data);
   });
 
-  app.get("/api/badges", (_req: Request, res: Response) => {
+  app.get("/api/badges", async (_req: Request, res: Response) => {
+    const badges = await storage.getBadges();
+    const pointActions = await storage.getPointActions();
     res.json({ badges, pointActions });
   });
 
-  // ── Auth verify (lightweight – real verification would use Firebase Admin SDK) ──
+  // ── Auth verify ─────────────────────────────────────────────
 
-  app.post("/api/auth/verify", (req: Request, res: Response) => {
-    const { uid, displayName, email, photoUrl } = req.body;
+  app.post("/api/auth/verify", async (req: Request, res: Response) => {
+    const {
+      uid, displayName, email, photoUrl,
+      localPoints, localFavoriteWineIds, localUnlockedBadgeIds,
+      localVisitedVineyardIds, localVisitedCellarIds,
+    } = req.body;
     if (!uid) return res.status(400).json({ message: "uid required" });
 
-    storage.getOrCreateProfile(uid, displayName ?? "User", email, photoUrl)
-      .then((profile) => res.json({ ok: true, profile }))
-      .catch(() => res.status(500).json({ message: "Internal error" }));
+    try {
+      const profile = await storage.getOrCreateProfile(uid, displayName ?? "User", email, photoUrl);
+
+      if (typeof localPoints === "number" && localPoints > profile.points) {
+        await storage.updateProfilePoints(uid, localPoints - profile.points);
+        profile.points = localPoints;
+      }
+
+      const mergeArr = (existing: string[], incoming?: string[]) => {
+        if (!Array.isArray(incoming)) return;
+        for (const id of incoming) {
+          if (!existing.includes(id)) existing.push(id);
+        }
+      };
+      mergeArr(profile.favoriteWineIds, localFavoriteWineIds);
+      mergeArr(profile.unlockedBadgeIds, localUnlockedBadgeIds);
+      mergeArr(profile.visitedVineyardIds, localVisitedVineyardIds);
+      mergeArr(profile.visitedCellarIds, localVisitedCellarIds);
+
+      res.json({ ok: true, profile });
+    } catch {
+      res.status(500).json({ message: "Internal error" });
+    }
   });
 
   // ── Comments ──────────────────────────────────────────────────
@@ -152,7 +185,7 @@ export async function registerRoutes(
     });
 
     await storage.updateProfilePoints(userId, 30);
-    (storage as any).addActivity(userId, "comment", id, 30);
+    await storage.addActivity(userId, "comment", id, 30);
     await evaluateAndUnlockBadges(userId);
 
     res.status(201).json(comment);
@@ -167,7 +200,7 @@ export async function registerRoutes(
       return res.status(400).json({ message: "userId, targetType, targetId, latitude, longitude required" });
     }
 
-    const coords = getTargetCoordinates(targetType, targetId);
+    const coords = await getTargetCoordinates(targetType, targetId);
     if (!coords) {
       return res.status(404).json({ message: "Target not found" });
     }
@@ -191,7 +224,7 @@ export async function registerRoutes(
     if (targetType === "vineyard" || targetType === "cellar") {
       await storage.addVisited(userId, targetType, targetId);
     }
-    (storage as any).addActivity(userId, "visit_gps", targetId, pts);
+    await storage.addActivity(userId, "visit_gps", targetId, pts);
     await evaluateAndUnlockBadges(userId);
 
     res.status(201).json({ checkin, pointsEarned: pts });
@@ -218,7 +251,7 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Invalid QR payload" });
     }
 
-    const coords = getTargetCoordinates(targetType, targetId);
+    const coords = await getTargetCoordinates(targetType, targetId);
     if (!coords) {
       return res.status(404).json({ message: "Target not found" });
     }
@@ -237,7 +270,7 @@ export async function registerRoutes(
     if (targetType === "vineyard" || targetType === "cellar") {
       await storage.addVisited(userId, targetType as any, targetId);
     }
-    (storage as any).addActivity(userId, "visit_qr", targetId, pts);
+    await storage.addActivity(userId, "visit_qr", targetId, pts);
     await evaluateAndUnlockBadges(userId);
 
     res.status(201).json({ checkin, pointsEarned: pts });
@@ -253,7 +286,7 @@ export async function registerRoutes(
 
     const pts = 100;
     await storage.updateProfilePoints(userId, pts);
-    (storage as any).addActivity(userId, "purchase", wineId ?? "unknown", pts);
+    await storage.addActivity(userId, "purchase", wineId ?? "unknown", pts);
     await evaluateAndUnlockBadges(userId);
 
     res.json({ ok: true, pointsEarned: pts });
@@ -295,6 +328,40 @@ export async function registerRoutes(
     if (!userId) return res.status(400).json({ message: "userId query param required" });
     const activity = await storage.getActivity(userId);
     res.json(activity);
+  });
+
+  // ── Ratings aggregation ─────────────────────────────────────
+
+  app.get("/api/ratings/:type/:id", async (req: Request, res: Response) => {
+    const type = req.params.type as string;
+    const id = req.params.id as string;
+    const result = await storage.getAverageRating(type, id);
+    res.json(result);
+  });
+
+  // ── Leaderboard ─────────────────────────────────────────────
+
+  app.get("/api/leaderboard", async (_req: Request, res: Response) => {
+    const limit = parseInt(_req.query.limit as string) || 50;
+    const leaderboard = await storage.getLeaderboard(limit);
+    res.json(leaderboard);
+  });
+
+  // ── Push subscriptions ──────────────────────────────────────
+
+  app.post("/api/push/subscribe", async (req: Request, res: Response) => {
+    const { userId, subscription } = req.body;
+    if (!userId || !subscription) {
+      return res.status(400).json({ message: "userId and subscription required" });
+    }
+    await storage.addPushSubscription(userId, subscription);
+    res.json({ ok: true });
+  });
+
+  app.delete("/api/push/subscribe", async (req: Request, res: Response) => {
+    const userId = req.query.userId as string;
+    if (userId) await storage.removePushSubscription(userId);
+    res.json({ ok: true });
   });
 
   return httpServer;

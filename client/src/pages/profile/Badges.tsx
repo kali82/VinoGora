@@ -16,7 +16,10 @@ import {
   TrendingUp,
   Grape,
   Clock,
+  Trophy,
+  ChevronRight,
 } from "lucide-react";
+import { Link } from "wouter";
 import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "react-i18next";
 import { useLocalized } from "@/hooks/use-localized";
@@ -222,6 +225,22 @@ export default function Badges() {
             );
           })}
         </div>
+      </section>
+
+      {/* Leaderboard link */}
+      <section className="px-5 mt-8">
+        <Link href="/leaderboard">
+          <div className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border shadow-sm cursor-pointer hover:bg-card/80 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
+              <Trophy size={22} className="text-accent-foreground" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold">{tr("leaderboard.viewAll")}</h3>
+              <p className="text-xs text-muted-foreground">{tr("leaderboard.title")}</p>
+            </div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </div>
+        </Link>
       </section>
 
       {/* Receipt Upload */}

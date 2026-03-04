@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { UserComment } from "@shared/types";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CheckIn {
   id: string;
@@ -20,6 +21,7 @@ interface CheckIn {
 interface GameState {
   points: number;
   favoriteWineIds: string[];
+  wineNotes: Record<string, string>;
   comments: UserComment[];
   checkIns: CheckIn[];
   unlockedBadgeIds: string[];
@@ -29,17 +31,22 @@ interface GameState {
 
 type GameAction =
   | { type: "ADD_POINTS"; payload: number }
+  | { type: "SET_FAVORITES"; payload: string[] }
   | { type: "TOGGLE_FAVORITE_WINE"; payload: string }
   | { type: "ADD_COMMENT"; payload: UserComment }
+  | { type: "SET_COMMENTS"; payload: { key: string; comments: UserComment[] } }
   | { type: "ADD_CHECKIN"; payload: CheckIn }
   | { type: "UNLOCK_BADGE"; payload: string }
-  | { type: "LOAD_STATE"; payload: GameState };
+  | { type: "SET_WINE_NOTE"; payload: { wineId: string; note: string } }
+  | { type: "LOAD_STATE"; payload: GameState }
+  | { type: "MERGE_PROFILE"; payload: Partial<GameState> };
 
 const STORAGE_KEY = "vinogora_game_state";
 
 const initialState: GameState = {
   points: 0,
   favoriteWineIds: [],
+  wineNotes: {},
   comments: [],
   checkIns: [],
   unlockedBadgeIds: [],
@@ -51,6 +58,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "ADD_POINTS":
       return { ...state, points: state.points + action.payload };
+
+    case "SET_FAVORITES":
+      return { ...state, favoriteWineIds: action.payload };
 
     case "TOGGLE_FAVORITE_WINE": {
       const id = action.payload;
@@ -65,6 +75,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "ADD_COMMENT":
       return { ...state, comments: [...state.comments, action.payload] };
+
+    case "SET_COMMENTS": {
+      const filtered = state.comments.filter(
+        (c) => `${c.targetType}:${c.targetId}` !== action.payload.key
+      );
+      return { ...state, comments: [...filtered, ...action.payload.comments] };
+    }
 
     case "ADD_CHECKIN": {
       const checkin = action.payload;
@@ -94,8 +111,32 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             unlockedBadgeIds: [...state.unlockedBadgeIds, action.payload],
           };
 
+    case "SET_WINE_NOTE": {
+      const { wineId, note } = action.payload;
+      const notes = { ...state.wineNotes };
+      if (note.trim()) {
+        notes[wineId] = note.trim();
+      } else {
+        delete notes[wineId];
+      }
+      return { ...state, wineNotes: notes };
+    }
+
     case "LOAD_STATE":
-      return action.payload;
+      return { ...initialState, ...action.payload, wineNotes: action.payload.wineNotes ?? {} };
+
+    case "MERGE_PROFILE": {
+      const mergeUnique = (local: string[], remote?: string[]) =>
+        remote ? Array.from(new Set([...local, ...remote])) : local;
+      return {
+        ...state,
+        points: Math.max(state.points, action.payload.points ?? 0),
+        favoriteWineIds: mergeUnique(state.favoriteWineIds, action.payload.favoriteWineIds),
+        unlockedBadgeIds: mergeUnique(state.unlockedBadgeIds, action.payload.unlockedBadgeIds),
+        visitedVineyardIds: mergeUnique(state.visitedVineyardIds, action.payload.visitedVineyardIds),
+        visitedCellarIds: mergeUnique(state.visitedCellarIds, action.payload.visitedCellarIds),
+      };
+    }
 
     default:
       return state;
@@ -130,20 +171,24 @@ function evaluateBadges(state: GameState): string[] {
 interface GameContextValue {
   state: GameState;
   addPoints: (pts: number) => void;
-  toggleFavoriteWine: (wineId: string) => void;
+  toggleFavoriteWine: (wineId: string, userId?: string) => void;
   isFavoriteWine: (wineId: string) => boolean;
+  setWineNote: (wineId: string, note: string) => void;
+  getWineNote: (wineId: string) => string;
   addComment: (comment: Omit<UserComment, "id" | "createdAt">) => void;
-  getComments: (
-    targetType: string,
-    targetId: string
-  ) => UserComment[];
+  getComments: (targetType: string, targetId: string) => UserComment[];
+  fetchComments: (targetType: string, targetId: string) => Promise<UserComment[]>;
   addCheckIn: (
     targetType: "vineyard" | "cellar" | "festival",
     targetId: string,
     method: "gps" | "qr",
-    photoUrl?: string
+    photoUrl?: string,
+    userId?: string,
+    latitude?: number,
+    longitude?: number
   ) => void;
   canCheckIn: (targetId: string) => boolean;
+  syncProfile: (userId: string, displayName: string, email?: string, photoUrl?: string) => void;
   level: number;
   pointsToNextLevel: number;
   progressPercent: number;
@@ -193,14 +238,29 @@ export function GameProvider({ children }: { children: ReactNode }) {
   );
 
   const toggleFavoriteWine = useCallback(
-    (wineId: string) =>
-      dispatch({ type: "TOGGLE_FAVORITE_WINE", payload: wineId }),
+    (wineId: string, userId?: string) => {
+      dispatch({ type: "TOGGLE_FAVORITE_WINE", payload: wineId });
+      if (userId) {
+        apiRequest("POST", "/api/favorites", { userId, wineId }).catch(() => {});
+      }
+    },
     []
   );
 
   const isFavoriteWine = useCallback(
     (wineId: string) => state.favoriteWineIds.includes(wineId),
     [state.favoriteWineIds]
+  );
+
+  const setWineNote = useCallback(
+    (wineId: string, note: string) =>
+      dispatch({ type: "SET_WINE_NOTE", payload: { wineId, note } }),
+    []
+  );
+
+  const getWineNote = useCallback(
+    (wineId: string) => state.wineNotes[wineId] ?? "",
+    [state.wineNotes]
   );
 
   const addComment = useCallback(
@@ -212,6 +272,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
       };
       dispatch({ type: "ADD_COMMENT", payload: full });
       dispatch({ type: "ADD_POINTS", payload: 30 });
+
+      apiRequest("POST", `/api/comments/${comment.targetType}/${comment.targetId}`, {
+        userId: comment.userId,
+        userName: comment.userName,
+        userAvatar: comment.userAvatar,
+        rating: comment.rating,
+        text: comment.text,
+        photoUrl: comment.photoUrl,
+      }).catch(() => {});
     },
     []
   );
@@ -221,6 +290,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
       state.comments.filter(
         (c) => c.targetType === targetType && c.targetId === targetId
       ),
+    [state.comments]
+  );
+
+  const fetchComments = useCallback(
+    async (targetType: string, targetId: string): Promise<UserComment[]> => {
+      try {
+        const res = await fetch(`/api/comments/${targetType}/${targetId}`);
+        if (res.ok) {
+          const serverComments: UserComment[] = await res.json();
+          dispatch({
+            type: "SET_COMMENTS",
+            payload: { key: `${targetType}:${targetId}`, comments: serverComments },
+          });
+          return serverComments;
+        }
+      } catch {
+        // offline - fall back to local
+      }
+      return state.comments.filter(
+        (c) => c.targetType === targetType && c.targetId === targetId
+      );
+    },
     [state.comments]
   );
 
@@ -245,7 +336,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       targetType: "vineyard" | "cellar" | "festival",
       targetId: string,
       method: "gps" | "qr",
-      photoUrl?: string
+      photoUrl?: string,
+      userId?: string,
+      latitude?: number,
+      longitude?: number
     ) => {
       const checkin: CheckIn = {
         id: `checkin-${Date.now()}`,
@@ -258,6 +352,54 @@ export function GameProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "ADD_CHECKIN", payload: checkin });
       const pts = targetType === "festival" ? 75 : 50;
       dispatch({ type: "ADD_POINTS", payload: pts });
+
+      if (userId) {
+        if (method === "gps") {
+          apiRequest("POST", "/api/checkin", {
+            userId, targetType, targetId, latitude, longitude, photoUrl,
+          }).catch(() => {});
+        } else {
+          apiRequest("POST", "/api/checkin/qr", {
+            userId, qrPayload: JSON.stringify({ targetType, targetId }),
+          }).catch(() => {});
+        }
+      }
+    },
+    []
+  );
+
+  const syncProfile = useCallback(
+    (userId: string, displayName: string, email?: string, photoUrl?: string) => {
+      const localState = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") as Partial<GameState>;
+      apiRequest("POST", "/api/auth/verify", {
+        uid: userId,
+        displayName,
+        email,
+        photoUrl,
+        localPoints: localState.points ?? 0,
+        localFavoriteWineIds: localState.favoriteWineIds ?? [],
+        localUnlockedBadgeIds: localState.unlockedBadgeIds ?? [],
+        localVisitedVineyardIds: localState.visitedVineyardIds ?? [],
+        localVisitedCellarIds: localState.visitedCellarIds ?? [],
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.profile) {
+            dispatch({
+              type: "MERGE_PROFILE",
+              payload: {
+                points: data.profile.points,
+                favoriteWineIds: data.profile.favoriteWineIds,
+                unlockedBadgeIds: data.profile.unlockedBadgeIds,
+                visitedVineyardIds: data.profile.visitedVineyardIds,
+                visitedCellarIds: data.profile.visitedCellarIds,
+              },
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("[syncProfile] failed:", err);
+        });
     },
     []
   );
@@ -274,10 +416,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
         addPoints,
         toggleFavoriteWine,
         isFavoriteWine,
+        setWineNote,
+        getWineNote,
         addComment,
         getComments,
+        fetchComments,
         addCheckIn,
         canCheckIn,
+        syncProfile,
         level,
         pointsToNextLevel,
         progressPercent,

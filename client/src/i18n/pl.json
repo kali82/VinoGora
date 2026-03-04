@@ -36,7 +36,8 @@
     "navigate": "Nawiguj",
     "details": "Szczegóły",
     "kmFromCenter": "{{km}} km od centrum",
-    "noResults": "Nie znaleziono winnic"
+    "noResults": "Nie znaleziono winnic",
+    "organic": "Ekologiczne"
   },
   "cellars": {
     "title": "Szlak Piwnic",
@@ -88,7 +89,9 @@
     "editNotes": "Edytuj Notatki",
     "addMore": "Dodaj więcej win",
     "browseDirectory": "Przeglądaj katalog, by dodać ulubione",
-    "noFavorites": "Nie masz jeszcze ulubionych win"
+    "noFavorites": "Nie masz jeszcze ulubionych win",
+    "addNote": "Dodaj notatkę",
+    "notePlaceholder": "Twoje wrażenia, z czym smakuje najlepiej..."
   },
   "profile": {
     "title": "Profil",
@@ -166,12 +169,43 @@
     "invalidCode": "Nieprawidłowy kod QR",
     "success": "Kod QR zeskanowany! Wizyta potwierdzona"
   },
+  "push": {
+    "title": "Włącz powiadomienia",
+    "description": "Otrzymuj powiadomienia o pobliskich winnicach, festiwalach i nowych recenzjach",
+    "enable": "Włącz",
+    "disabled": "Powiadomienia wyłączone"
+  },
   "pwa": {
     "installTitle": "Zainstaluj VinoGóra",
     "installDescription": "Dodaj aplikację do ekranu głównego dla szybszego dostępu",
     "install": "Zainstaluj",
     "dismiss": "Nie teraz",
     "offline": "Jesteś offline. Niektóre funkcje mogą być niedostępne."
+  },
+  "leaderboard": {
+    "title": "Ranking",
+    "empty": "Brak graczy w rankingu. Bądź pierwszy!",
+    "you": "Ty",
+    "pts": "pkt",
+    "viewAll": "Zobacz ranking"
+  },
+  "filters": {
+    "title": "Filtry",
+    "wineType": "Typ wina",
+    "all": "Wszystkie",
+    "red": "Czerwone",
+    "white": "Białe",
+    "rose": "Różowe",
+    "sparkling": "Musujące",
+    "organic": "Tylko ekologiczne",
+    "priceRange": "Zakres cenowy",
+    "sortBy": "Sortuj według",
+    "sortName": "Nazwa",
+    "sortRating": "Ocena",
+    "sortPrice": "Cena",
+    "apply": "Zastosuj",
+    "reset": "Wyczyść filtry",
+    "results": "{{count}} wyników"
   },
   "common": {
     "back": "Wróć",
