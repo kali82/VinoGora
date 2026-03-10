@@ -8,6 +8,9 @@ import { wines } from "../shared/data/wines";
 import { cellars } from "../shared/data/cellars";
 import { festivals } from "../shared/data/festivals";
 import { badges, pointActions } from "../shared/data/badges";
+import { wineTrails } from "../shared/data/trails";
+import { tastingEvents } from "../shared/data/tastings";
+import { rewards } from "../shared/data/rewards";
 
 async function seed() {
   if (!process.env.DATABASE_URL) {
@@ -164,6 +167,65 @@ async function seed() {
         label: pa.label,
         description: pa.description,
         cooldownHours: pa.cooldownHours,
+      })
+      .onConflictDoNothing();
+  }
+
+  // ── Wine Trails ────────────────────────────────────────────
+  console.log("  wine trails...");
+  for (const trail of wineTrails) {
+    await db
+      .insert(schema.wineTrailsTable)
+      .values({
+        id: trail.id,
+        name: trail.name,
+        description: trail.description,
+        difficulty: trail.difficulty,
+        durationMinutes: trail.durationMinutes,
+        distanceKm: trail.distanceKm,
+        imageUrl: trail.imageUrl,
+        stops: trail.stops,
+      })
+      .onConflictDoNothing();
+  }
+
+  // ── Tasting Events ────────────────────────────────────────
+  console.log("  tasting events...");
+  for (const event of tastingEvents) {
+    await db
+      .insert(schema.tastingEventsTable)
+      .values({
+        id: event.id,
+        vineyardId: event.vineyardId,
+        title: event.title,
+        description: event.description,
+        date: event.date,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        price: event.price,
+        maxParticipants: event.maxParticipants,
+        currentParticipants: event.currentParticipants,
+        imageUrl: event.imageUrl,
+        coordinates: event.coordinates,
+      })
+      .onConflictDoNothing();
+  }
+
+  // ── Rewards ───────────────────────────────────────────────
+  console.log("  rewards...");
+  for (const reward of rewards) {
+    await db
+      .insert(schema.rewardsTable)
+      .values({
+        id: reward.id,
+        vineyardId: reward.vineyardId,
+        title: reward.title,
+        description: reward.description,
+        pointsCost: reward.pointsCost,
+        category: reward.category,
+        imageUrl: reward.imageUrl,
+        active: reward.active,
+        totalClaimed: reward.totalClaimed,
       })
       .onConflictDoNothing();
   }

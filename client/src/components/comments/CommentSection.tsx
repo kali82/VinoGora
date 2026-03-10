@@ -57,10 +57,14 @@ export default function CommentSection({
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [serverComments, setServerComments] = useState<UserComment[] | null>(null);
+  const fetchedRef = useRef<string>("");
 
   useEffect(() => {
+    const key = `${targetType}:${targetId}`;
+    if (fetchedRef.current === key) return;
+    fetchedRef.current = key;
     fetchComments(targetType, targetId).then(setServerComments).catch(() => {});
-  }, [targetType, targetId, fetchComments]);
+  }, [targetType, targetId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const localComments = getComments(targetType, targetId);
   const comments = serverComments ?? localComments;

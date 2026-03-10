@@ -29,6 +29,12 @@ import WineDetail from "@/pages/wines/WineDetail";
 import MyWines from "@/pages/favorites/MyWines";
 import Badges from "@/pages/profile/Badges";
 import Leaderboard from "@/pages/profile/Leaderboard";
+import WineTrails from "@/pages/trails/WineTrails";
+import TrailDetail from "@/pages/trails/TrailDetail";
+import EventsList from "@/pages/events/EventsList";
+import RewardsList from "@/pages/rewards/RewardsList";
+import CityModule from "@/pages/city/CityModule";
+import WineryDashboard from "@/pages/winery/WineryDashboard";
 
 function ProximityWatcher() {
   useProximity();
@@ -75,6 +81,12 @@ function Router() {
         <Route path="/favorites" component={MyWines} />
         <Route path="/profile" component={Badges} />
         <Route path="/leaderboard" component={Leaderboard} />
+        <Route path="/trails" component={WineTrails} />
+        <Route path="/trails/:id" component={TrailDetail} />
+        <Route path="/events" component={EventsList} />
+        <Route path="/rewards" component={RewardsList} />
+        <Route path="/city" component={CityModule} />
+        <Route path="/winery" component={WineryDashboard} />
         <Route component={NotFound} />
       </Switch>
     </MobileLayout>

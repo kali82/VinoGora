@@ -13,9 +13,16 @@ import {
   pointActionsTable,
   pushSubscriptions,
   wineNotes,
+  wineTrailsTable,
+  tastingEventsTable,
+  rewardsTable,
+  rewardClaimsTable,
   users,
 } from "@shared/schema";
-import type { Vineyard, Cellar, Wine, Festival, Badge, PointAction } from "@shared/types";
+import type {
+  Vineyard, Cellar, Wine, Festival, Badge, PointAction,
+  WineTrail, TastingEvent, Reward, WineNote, VineyardStats, PlatformStats,
+} from "@shared/types";
 import { db } from "./db";
 import { eq, and, desc, sql, or, count as countFn } from "drizzle-orm";
 
@@ -56,6 +63,8 @@ export interface UserProfile {
   unlockedBadgeIds: string[];
   visitedVineyardIds: string[];
   visitedCellarIds: string[];
+  role: string;
+  managedVineyardId?: string;
   createdAt: string;
 }
 
@@ -77,6 +86,12 @@ export interface IStorage {
   getOrCreateProfile(uid: string, displayName: string, email?: string, photoUrl?: string): Promise<UserProfile>;
   getProfile(uid: string): Promise<UserProfile | undefined>;
   updateProfilePoints(uid: string, delta: number): Promise<void>;
+  updateProfileArrays(uid: string, data: {
+    favoriteWineIds?: string[];
+    unlockedBadgeIds?: string[];
+    visitedVineyardIds?: string[];
+    visitedCellarIds?: string[];
+  }): Promise<void>;
   addVisited(uid: string, type: "vineyard" | "cellar", targetId: string): Promise<void>;
   unlockBadge(uid: string, badgeId: string): Promise<void>;
 
@@ -111,6 +126,28 @@ export interface IStorage {
   getBadges(): Promise<Badge[]>;
   getPointActions(): Promise<PointAction[]>;
 
+  // Wine notes
+  getWineNotes(userId: string): Promise<WineNote[]>;
+  setWineNote(userId: string, wineId: string, note: string): Promise<WineNote>;
+  deleteWineNote(userId: string, wineId: string): Promise<void>;
+
+  // Wine trails
+  getWineTrails(): Promise<WineTrail[]>;
+  getWineTrail(id: string): Promise<WineTrail | undefined>;
+
+  // Tasting events
+  getTastingEvents(): Promise<TastingEvent[]>;
+  getTastingEvent(id: string): Promise<TastingEvent | undefined>;
+
+  // Rewards
+  getRewards(): Promise<Reward[]>;
+  claimReward(userId: string, rewardId: string): Promise<{ success: boolean; message: string }>;
+  getUserClaims(userId: string): Promise<Array<{ rewardId: string; claimedAt: string; status: string }>>;
+
+  // Stats
+  getVineyardStats(vineyardId: string): Promise<VineyardStats>;
+  getPlatformStats(): Promise<PlatformStats>;
+
   // Push subscriptions
   addPushSubscription(userId: string, subscription: unknown): Promise<void>;
   removePushSubscription(userId: string): Promise<void>;
@@ -132,6 +169,8 @@ function rowToProfile(row: typeof profiles.$inferSelect): UserProfile {
     unlockedBadgeIds: row.unlockedBadgeIds ?? [],
     visitedVineyardIds: row.visitedVineyardIds ?? [],
     visitedCellarIds: row.visitedCellarIds ?? [],
+    role: row.role,
+    managedVineyardId: row.managedVineyardId ?? undefined,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -275,6 +314,22 @@ export class PgStorage implements IStorage {
       .update(profiles)
       .set({ points: sql`${profiles.points} + ${delta}` })
       .where(eq(profiles.uid, uid));
+  }
+
+  async updateProfileArrays(uid: string, data: {
+    favoriteWineIds?: string[];
+    unlockedBadgeIds?: string[];
+    visitedVineyardIds?: string[];
+    visitedCellarIds?: string[];
+  }): Promise<void> {
+    const updates: Record<string, any> = {};
+    if (data.favoriteWineIds) updates.favoriteWineIds = data.favoriteWineIds;
+    if (data.unlockedBadgeIds) updates.unlockedBadgeIds = data.unlockedBadgeIds;
+    if (data.visitedVineyardIds) updates.visitedVineyardIds = data.visitedVineyardIds;
+    if (data.visitedCellarIds) updates.visitedCellarIds = data.visitedCellarIds;
+    if (Object.keys(updates).length > 0) {
+      await db.update(profiles).set(updates).where(eq(profiles.uid, uid));
+    }
   }
 
   async addVisited(uid: string, type: "vineyard" | "cellar", targetId: string): Promise<void> {
@@ -576,6 +631,281 @@ export class PgStorage implements IStorage {
       .from(pushSubscriptions)
       .where(eq(pushSubscriptions.userId, userId));
     return row?.subscription;
+  }
+
+  // ── Wine notes ─────────────────────────────────────────────────
+
+  async getWineNotes(userId: string): Promise<WineNote[]> {
+    const rows = await db
+      .select()
+      .from(wineNotes)
+      .where(eq(wineNotes.userId, userId))
+      .orderBy(desc(wineNotes.updatedAt));
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      wineId: r.wineId,
+      note: r.note,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString(),
+    }));
+  }
+
+  async setWineNote(userId: string, wineId: string, note: string): Promise<WineNote> {
+    const [existing] = await db
+      .select()
+      .from(wineNotes)
+      .where(and(eq(wineNotes.userId, userId), eq(wineNotes.wineId, wineId)));
+
+    if (existing) {
+      const [updated] = await db
+        .update(wineNotes)
+        .set({ note, updatedAt: new Date() })
+        .where(eq(wineNotes.id, existing.id))
+        .returning();
+      return {
+        id: updated.id, userId: updated.userId, wineId: updated.wineId,
+        note: updated.note, createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      };
+    }
+
+    const [created] = await db
+      .insert(wineNotes)
+      .values({ userId, wineId, note })
+      .returning();
+    return {
+      id: created.id, userId: created.userId, wineId: created.wineId,
+      note: created.note, createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    };
+  }
+
+  async deleteWineNote(userId: string, wineId: string): Promise<void> {
+    await db
+      .delete(wineNotes)
+      .where(and(eq(wineNotes.userId, userId), eq(wineNotes.wineId, wineId)));
+  }
+
+  // ── Wine trails ────────────────────────────────────────────────
+
+  async getWineTrails(): Promise<WineTrail[]> {
+    const rows = await db.select().from(wineTrailsTable);
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      difficulty: r.difficulty as WineTrail["difficulty"],
+      durationMinutes: r.durationMinutes,
+      distanceKm: r.distanceKm,
+      imageUrl: r.imageUrl ?? undefined,
+      stops: r.stops,
+    }));
+  }
+
+  async getWineTrail(id: string): Promise<WineTrail | undefined> {
+    const [row] = await db.select().from(wineTrailsTable).where(eq(wineTrailsTable.id, id));
+    if (!row) return undefined;
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      difficulty: row.difficulty as WineTrail["difficulty"],
+      durationMinutes: row.durationMinutes,
+      distanceKm: row.distanceKm,
+      imageUrl: row.imageUrl ?? undefined,
+      stops: row.stops,
+    };
+  }
+
+  // ── Tasting events ─────────────────────────────────────────────
+
+  async getTastingEvents(): Promise<TastingEvent[]> {
+    const rows = await db.select().from(tastingEventsTable);
+    return rows.map((r) => ({
+      id: r.id,
+      vineyardId: r.vineyardId ?? undefined,
+      title: r.title,
+      description: r.description,
+      date: r.date,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      price: r.price ?? undefined,
+      maxParticipants: r.maxParticipants ?? undefined,
+      currentParticipants: r.currentParticipants,
+      imageUrl: r.imageUrl ?? undefined,
+      coordinates: r.coordinates ?? undefined,
+    }));
+  }
+
+  async getTastingEvent(id: string): Promise<TastingEvent | undefined> {
+    const [row] = await db.select().from(tastingEventsTable).where(eq(tastingEventsTable.id, id));
+    if (!row) return undefined;
+    return {
+      id: row.id,
+      vineyardId: row.vineyardId ?? undefined,
+      title: row.title,
+      description: row.description,
+      date: row.date,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      price: row.price ?? undefined,
+      maxParticipants: row.maxParticipants ?? undefined,
+      currentParticipants: row.currentParticipants,
+      imageUrl: row.imageUrl ?? undefined,
+      coordinates: row.coordinates ?? undefined,
+    };
+  }
+
+  // ── Rewards ────────────────────────────────────────────────────
+
+  async getRewards(): Promise<Reward[]> {
+    const rows = await db.select().from(rewardsTable).where(eq(rewardsTable.active, true));
+    return rows.map((r) => ({
+      id: r.id,
+      vineyardId: r.vineyardId ?? undefined,
+      title: r.title,
+      description: r.description,
+      pointsCost: r.pointsCost,
+      category: r.category as Reward["category"],
+      imageUrl: r.imageUrl ?? undefined,
+      active: r.active,
+      totalClaimed: r.totalClaimed,
+    }));
+  }
+
+  async claimReward(userId: string, rewardId: string): Promise<{ success: boolean; message: string }> {
+    const profile = await this.getProfile(userId);
+    if (!profile) return { success: false, message: "Profile not found" };
+
+    const [reward] = await db.select().from(rewardsTable).where(eq(rewardsTable.id, rewardId));
+    if (!reward || !reward.active) return { success: false, message: "Reward not available" };
+
+    if (profile.points < reward.pointsCost) {
+      return { success: false, message: "Not enough points" };
+    }
+
+    await db.update(profiles)
+      .set({ points: sql`${profiles.points} - ${reward.pointsCost}` })
+      .where(eq(profiles.uid, userId));
+
+    await db.update(rewardsTable)
+      .set({ totalClaimed: sql`${rewardsTable.totalClaimed} + 1` })
+      .where(eq(rewardsTable.id, rewardId));
+
+    await db.insert(rewardClaimsTable).values({
+      userId,
+      rewardId,
+      status: "pending",
+    });
+
+    return { success: true, message: "Reward claimed successfully" };
+  }
+
+  async getUserClaims(userId: string): Promise<Array<{ rewardId: string; claimedAt: string; status: string }>> {
+    const rows = await db
+      .select()
+      .from(rewardClaimsTable)
+      .where(eq(rewardClaimsTable.userId, userId))
+      .orderBy(desc(rewardClaimsTable.claimedAt));
+    return rows.map((r) => ({
+      rewardId: r.rewardId,
+      claimedAt: r.claimedAt.toISOString(),
+      status: r.status,
+    }));
+  }
+
+  // ── Stats ──────────────────────────────────────────────────────
+
+  async getVineyardStats(vineyardId: string): Promise<VineyardStats> {
+    const [checkInCount] = await db
+      .select({ c: countFn() })
+      .from(checkInsTable)
+      .where(eq(checkInsTable.targetId, vineyardId));
+
+    const uniqueVisitorRows = await db
+      .select({ uid: checkInsTable.userId })
+      .from(checkInsTable)
+      .where(eq(checkInsTable.targetId, vineyardId))
+      .groupBy(checkInsTable.userId);
+
+    const [ratingRow] = await db
+      .select({
+        avg: sql<string>`coalesce(round(avg(${commentsTable.rating})::numeric, 1), 0)`,
+        cnt: countFn(),
+      })
+      .from(commentsTable)
+      .where(and(eq(commentsTable.targetType, "vineyard"), eq(commentsTable.targetId, vineyardId)));
+
+    const vineyard = await this.getVineyard(vineyardId);
+    const wineIds = vineyard?.wines ?? [];
+    const popularWines: VineyardStats["popularWines"] = [];
+    for (const wid of wineIds) {
+      const wine = await this.getWine(wid);
+      if (wine) {
+        const [wr] = await db
+          .select({
+            avg: sql<string>`coalesce(round(avg(${commentsTable.rating})::numeric, 1), 0)`,
+            cnt: countFn(),
+          })
+          .from(commentsTable)
+          .where(and(eq(commentsTable.targetType, "wine"), eq(commentsTable.targetId, wid)));
+        popularWines.push({
+          wineId: wid,
+          name: wine.name,
+          rating: parseFloat(wr.avg) || 0,
+          reviewCount: Number(wr.cnt),
+        });
+      }
+    }
+
+    return {
+      vineyardId,
+      totalCheckIns: Number(checkInCount.c),
+      uniqueVisitors: uniqueVisitorRows.length,
+      averageRating: parseFloat(ratingRow.avg) || 0,
+      totalComments: Number(ratingRow.cnt),
+      popularWines: popularWines.sort((a, b) => b.rating - a.rating),
+      checkInsByMonth: [],
+    };
+  }
+
+  async getPlatformStats(): Promise<PlatformStats> {
+    const [userCount] = await db.select({ c: countFn() }).from(profiles);
+    const [checkInTotal] = await db.select({ c: countFn() }).from(checkInsTable);
+    const [commentTotal] = await db.select({ c: countFn() }).from(commentsTable);
+    const [vineyardCount] = await db.select({ c: countFn() }).from(vineyardsTable);
+
+    const vineyardRows = await db.select().from(vineyardsTable);
+    const topVineyards: PlatformStats["topVineyards"] = [];
+    for (const v of vineyardRows) {
+      const [ci] = await db
+        .select({ c: countFn() })
+        .from(checkInsTable)
+        .where(eq(checkInsTable.targetId, v.id));
+      const [rt] = await db
+        .select({
+          avg: sql<string>`coalesce(round(avg(${commentsTable.rating})::numeric, 1), 0)`,
+        })
+        .from(commentsTable)
+        .where(and(eq(commentsTable.targetType, "vineyard"), eq(commentsTable.targetId, v.id)));
+      topVineyards.push({
+        id: v.id,
+        name: v.name,
+        checkIns: Number(ci.c),
+        rating: parseFloat(rt.avg) || 0,
+      });
+    }
+    topVineyards.sort((a, b) => b.checkIns - a.checkIns);
+
+    return {
+      totalUsers: Number(userCount.c),
+      totalCheckIns: Number(checkInTotal.c),
+      totalComments: Number(commentTotal.c),
+      activeVineyards: Number(vineyardCount.c),
+      topVineyards,
+      monthlyActivity: [],
+    };
   }
 }
 

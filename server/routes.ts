@@ -133,16 +133,29 @@ export async function registerRoutes(
         profile.points = localPoints;
       }
 
+      let needsUpdate = false;
       const mergeArr = (existing: string[], incoming?: string[]) => {
         if (!Array.isArray(incoming)) return;
         for (const id of incoming) {
-          if (!existing.includes(id)) existing.push(id);
+          if (!existing.includes(id)) {
+            existing.push(id);
+            needsUpdate = true;
+          }
         }
       };
       mergeArr(profile.favoriteWineIds, localFavoriteWineIds);
       mergeArr(profile.unlockedBadgeIds, localUnlockedBadgeIds);
       mergeArr(profile.visitedVineyardIds, localVisitedVineyardIds);
       mergeArr(profile.visitedCellarIds, localVisitedCellarIds);
+
+      if (needsUpdate) {
+        await storage.updateProfileArrays(uid, {
+          favoriteWineIds: profile.favoriteWineIds,
+          unlockedBadgeIds: profile.unlockedBadgeIds,
+          visitedVineyardIds: profile.visitedVineyardIds,
+          visitedCellarIds: profile.visitedCellarIds,
+        });
+      }
 
       res.json({ ok: true, profile });
     } catch {
@@ -345,6 +358,98 @@ export async function registerRoutes(
     const limit = parseInt(_req.query.limit as string) || 50;
     const leaderboard = await storage.getLeaderboard(limit);
     res.json(leaderboard);
+  });
+
+  // ── Wine notes ──────────────────────────────────────────────────
+
+  app.get("/api/wine-notes", async (req: Request, res: Response) => {
+    const userId = req.query.userId as string;
+    if (!userId) return res.status(400).json({ message: "userId query param required" });
+    const notes = await storage.getWineNotes(userId);
+    res.json(notes);
+  });
+
+  app.put("/api/wine-notes", async (req: Request, res: Response) => {
+    const { userId, wineId, note } = req.body;
+    if (!userId || !wineId || !note) {
+      return res.status(400).json({ message: "userId, wineId, and note required" });
+    }
+    const result = await storage.setWineNote(userId, wineId, note);
+    res.json(result);
+  });
+
+  app.delete("/api/wine-notes/:wineId", async (req: Request, res: Response) => {
+    const userId = req.query.userId as string;
+    const wineId = req.params.wineId as string;
+    if (!userId) return res.status(400).json({ message: "userId query param required" });
+    await storage.deleteWineNote(userId, wineId);
+    res.json({ ok: true });
+  });
+
+  // ── Wine trails ────────────────────────────────────────────────
+
+  app.get("/api/trails", async (_req: Request, res: Response) => {
+    const trails = await storage.getWineTrails();
+    res.json(trails);
+  });
+
+  app.get("/api/trails/:id", async (req: Request, res: Response) => {
+    const trail = await storage.getWineTrail(req.params.id as string);
+    if (!trail) return res.status(404).json({ message: "Trail not found" });
+    res.json(trail);
+  });
+
+  // ── Tasting events ─────────────────────────────────────────────
+
+  app.get("/api/events", async (_req: Request, res: Response) => {
+    const events = await storage.getTastingEvents();
+    res.json(events);
+  });
+
+  app.get("/api/events/:id", async (req: Request, res: Response) => {
+    const event = await storage.getTastingEvent(req.params.id as string);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+    res.json(event);
+  });
+
+  // ── Rewards ────────────────────────────────────────────────────
+
+  app.get("/api/rewards", async (_req: Request, res: Response) => {
+    const rewards = await storage.getRewards();
+    res.json(rewards);
+  });
+
+  app.post("/api/rewards/claim", async (req: Request, res: Response) => {
+    const { userId, rewardId } = req.body;
+    if (!userId || !rewardId) {
+      return res.status(400).json({ message: "userId and rewardId required" });
+    }
+    const result = await storage.claimReward(userId, rewardId);
+    if (!result.success) {
+      return res.status(400).json({ message: result.message });
+    }
+    res.json(result);
+  });
+
+  app.get("/api/rewards/claims", async (req: Request, res: Response) => {
+    const userId = req.query.userId as string;
+    if (!userId) return res.status(400).json({ message: "userId query param required" });
+    const claims = await storage.getUserClaims(userId);
+    res.json(claims);
+  });
+
+  // ── Winery dashboard stats ─────────────────────────────────────
+
+  app.get("/api/winery/stats/:vineyardId", async (req: Request, res: Response) => {
+    const stats = await storage.getVineyardStats(req.params.vineyardId as string);
+    res.json(stats);
+  });
+
+  // ── Platform stats (city/admin) ────────────────────────────────
+
+  app.get("/api/platform/stats", async (_req: Request, res: Response) => {
+    const stats = await storage.getPlatformStats();
+    res.json(stats);
   });
 
   // ── Push subscriptions ──────────────────────────────────────

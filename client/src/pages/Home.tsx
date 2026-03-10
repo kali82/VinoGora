@@ -10,6 +10,10 @@ import {
   ChevronRight,
   TrendingUp,
   Trophy,
+  Wine,
+  CalendarDays,
+  Gift,
+  Landmark,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -197,6 +201,64 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
+        </Link>
+      </section>
+
+      {/* New features row */}
+      <section className="grid grid-cols-2 gap-4">
+        <Link href="/trails">
+          <Card className="cursor-pointer border border-border shadow-md bg-card/60 backdrop-blur-sm hover:bg-card transition-colors rounded-2xl h-full">
+            <CardContent className="p-5 flex flex-col items-center text-center space-y-3 h-full justify-center">
+              <div className="p-3 bg-green-500/10 rounded-2xl text-green-600 dark:text-green-400">
+                <RouteIcon size={28} strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm font-display">{tr("trails.title")}</h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{tr("trails.subtitle")}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/events">
+          <Card className="cursor-pointer border border-border shadow-md bg-card/60 backdrop-blur-sm hover:bg-card transition-colors rounded-2xl h-full">
+            <CardContent className="p-5 flex flex-col items-center text-center space-y-3 h-full justify-center">
+              <div className="p-3 bg-accent/10 rounded-2xl text-accent-foreground">
+                <CalendarDays size={28} strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm font-display">{tr("events.title")}</h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{tr("events.subtitle")}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </section>
+
+      {/* Rewards & City links */}
+      <section className="space-y-2">
+        <Link href="/rewards">
+          <div className="flex items-center gap-3 p-4 bg-card rounded-2xl border border-border cursor-pointer hover:bg-card/80 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+              <Gift size={18} className="text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-display font-bold">{tr("rewards.title")}</p>
+              <p className="text-[10px] text-muted-foreground">{tr("rewards.subtitle")}</p>
+            </div>
+            <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+          </div>
+        </Link>
+        <Link href="/city">
+          <div className="flex items-center gap-3 p-4 bg-card rounded-2xl border border-border cursor-pointer hover:bg-card/80 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+              <Landmark size={18} className="text-green-600 dark:text-green-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-display font-bold">{tr("city.title")}</p>
+              <p className="text-[10px] text-muted-foreground">{tr("city.subtitle")}</p>
+            </div>
+            <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+          </div>
         </Link>
       </section>
 

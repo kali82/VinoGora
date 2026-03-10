@@ -18,6 +18,8 @@ import {
   Clock,
   Trophy,
   ChevronRight,
+  Gift,
+  BarChart3,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Progress } from "@/components/ui/progress";
@@ -237,6 +239,38 @@ export default function Badges() {
             <div className="flex-1">
               <h3 className="font-display font-bold">{tr("leaderboard.viewAll")}</h3>
               <p className="text-xs text-muted-foreground">{tr("leaderboard.title")}</p>
+            </div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </div>
+        </Link>
+      </section>
+
+      {/* Rewards link */}
+      <section className="px-5 mt-4">
+        <Link href="/rewards">
+          <div className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border shadow-sm cursor-pointer hover:bg-card/80 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Gift size={22} className="text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold">{tr("rewards.title")}</h3>
+              <p className="text-xs text-muted-foreground">{tr("rewards.subtitle")}</p>
+            </div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </div>
+        </Link>
+      </section>
+
+      {/* Winery dashboard link */}
+      <section className="px-5 mt-4">
+        <Link href="/winery">
+          <div className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border shadow-sm cursor-pointer hover:bg-card/80 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
+              <BarChart3 size={22} className="text-accent-foreground" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold">{tr("winery.dashboardTitle")}</h3>
+              <p className="text-xs text-muted-foreground">{tr("winery.dashboardSubtitle")}</p>
             </div>
             <ChevronRight size={18} className="text-muted-foreground" />
           </div>

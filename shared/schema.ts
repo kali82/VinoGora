@@ -24,6 +24,8 @@ export const profiles = pgTable("profiles", {
   unlockedBadgeIds: jsonb("unlocked_badge_ids").$type<string[]>().notNull().default([]),
   visitedVineyardIds: jsonb("visited_vineyard_ids").$type<string[]>().notNull().default([]),
   visitedCellarIds: jsonb("visited_cellar_ids").$type<string[]>().notNull().default([]),
+  role: varchar("role", { length: 20 }).notNull().default("user"),
+  managedVineyardId: varchar("managed_vineyard_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -163,6 +165,66 @@ export const pointActionsTable = pgTable("point_actions", {
   label: jsonb("label").$type<LocalizedText>().notNull(),
   description: jsonb("description").$type<LocalizedText>().notNull(),
   cooldownHours: integer("cooldown_hours"),
+});
+
+// ── Wine trails ───────────────────────────────────────────────────
+
+export const wineTrailsTable = pgTable("wine_trails", {
+  id: varchar("id").primaryKey(),
+  name: jsonb("name").$type<LocalizedText>().notNull(),
+  description: jsonb("description").$type<LocalizedText>().notNull(),
+  difficulty: varchar("difficulty", { length: 10 }).notNull(),
+  durationMinutes: integer("duration_minutes").notNull(),
+  distanceKm: real("distance_km").notNull(),
+  imageUrl: text("image_url"),
+  stops: jsonb("stops").$type<Array<{
+    order: number;
+    type: "vineyard" | "cellar" | "poi";
+    targetId: string;
+    name: LocalizedText;
+    description: LocalizedText;
+    coordinates: { lat: number; lng: number };
+    durationMinutes: number;
+  }>>().notNull(),
+});
+
+// ── Tasting events ────────────────────────────────────────────────
+
+export const tastingEventsTable = pgTable("tasting_events", {
+  id: varchar("id").primaryKey(),
+  vineyardId: varchar("vineyard_id"),
+  title: jsonb("title").$type<LocalizedText>().notNull(),
+  description: jsonb("description").$type<LocalizedText>().notNull(),
+  date: text("date").notNull(),
+  startTime: text("start_time").notNull(),
+  endTime: text("end_time").notNull(),
+  price: integer("price"),
+  maxParticipants: integer("max_participants"),
+  currentParticipants: integer("current_participants").notNull().default(0),
+  imageUrl: text("image_url"),
+  coordinates: jsonb("coordinates").$type<{ lat: number; lng: number }>(),
+});
+
+// ── Rewards ───────────────────────────────────────────────────────
+
+export const rewardsTable = pgTable("rewards", {
+  id: varchar("id").primaryKey(),
+  vineyardId: varchar("vineyard_id"),
+  title: jsonb("title").$type<LocalizedText>().notNull(),
+  description: jsonb("description").$type<LocalizedText>().notNull(),
+  pointsCost: integer("points_cost").notNull(),
+  category: varchar("category", { length: 20 }).notNull(),
+  imageUrl: text("image_url"),
+  active: boolean("active").notNull().default(true),
+  totalClaimed: integer("total_claimed").notNull().default(0),
+});
+
+export const rewardClaimsTable = pgTable("reward_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  rewardId: varchar("reward_id").notNull(),
+  claimedAt: timestamp("claimed_at").notNull().defaultNow(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
 });
 
 // ── Miscellaneous ─────────────────────────────────────────────────

@@ -4,10 +4,12 @@ import {
   useReducer,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type { UserComment } from "@shared/types";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface CheckIn {
   id: string;
@@ -173,7 +175,7 @@ interface GameContextValue {
   addPoints: (pts: number) => void;
   toggleFavoriteWine: (wineId: string, userId?: string) => void;
   isFavoriteWine: (wineId: string) => boolean;
-  setWineNote: (wineId: string, note: string) => void;
+  setWineNote: (wineId: string, note: string, userId?: string) => void;
   getWineNote: (wineId: string) => string;
   addComment: (comment: Omit<UserComment, "id" | "createdAt">) => void;
   getComments: (targetType: string, targetId: string) => UserComment[];
@@ -199,6 +201,12 @@ const POINTS_PER_LEVEL = 200;
 const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
+  const { user, isAuthenticated } = useAuthContext();
+  const uidRef = useRef<string | null>(null);
+  useEffect(() => {
+    uidRef.current = isAuthenticated && user ? user.uid : null;
+  }, [isAuthenticated, user]);
+
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
   useEffect(() => {
@@ -240,8 +248,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const toggleFavoriteWine = useCallback(
     (wineId: string, userId?: string) => {
       dispatch({ type: "TOGGLE_FAVORITE_WINE", payload: wineId });
-      if (userId) {
-        apiRequest("POST", "/api/favorites", { userId, wineId }).catch(() => {});
+      const uid = userId || uidRef.current;
+      if (uid) {
+        apiRequest("POST", "/api/favorites", { userId: uid, wineId }).catch(() => {});
       }
     },
     []
@@ -253,8 +262,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
   );
 
   const setWineNote = useCallback(
-    (wineId: string, note: string) =>
-      dispatch({ type: "SET_WINE_NOTE", payload: { wineId, note } }),
+    (wineId: string, note: string, userId?: string) => {
+      dispatch({ type: "SET_WINE_NOTE", payload: { wineId, note } });
+      const uid = userId || uidRef.current;
+      if (uid && note.trim()) {
+        apiRequest("PUT", "/api/wine-notes", { userId: uid, wineId, note: note.trim() }).catch(() => {});
+      } else if (uid && !note.trim()) {
+        apiRequest("DELETE", `/api/wine-notes/${wineId}?userId=${uid}`).catch(() => {});
+      }
+    },
     []
   );
 
@@ -353,14 +369,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const pts = targetType === "festival" ? 75 : 50;
       dispatch({ type: "ADD_POINTS", payload: pts });
 
-      if (userId) {
+      const uid = userId || uidRef.current;
+      if (uid) {
         if (method === "gps") {
           apiRequest("POST", "/api/checkin", {
-            userId, targetType, targetId, latitude, longitude, photoUrl,
+            userId: uid, targetType, targetId, latitude, longitude, photoUrl,
           }).catch(() => {});
         } else {
           apiRequest("POST", "/api/checkin/qr", {
-            userId, qrPayload: JSON.stringify({ targetType, targetId }),
+            userId: uid, qrPayload: JSON.stringify({ targetType, targetId }),
           }).catch(() => {});
         }
       }
